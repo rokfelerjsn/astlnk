@@ -2,7 +2,6 @@ import { TicketStatus } from './types';
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   new: 'Baru',
-  validated: 'Tervalidasi',
   assigned: 'Ditugaskan',
   in_progress: 'Dikerjakan',
   done: 'Selesai',
@@ -10,7 +9,6 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
 
 export const STATUS_FLOW: TicketStatus[] = [
   'new',
-  'validated',
   'assigned',
   'in_progress',
   'done',
@@ -18,7 +16,6 @@ export const STATUS_FLOW: TicketStatus[] = [
 
 export const STATUS_COLORS: Record<TicketStatus, { bg: string; text: string; dot: string }> = {
   new: { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
-  validated: { bg: 'bg-indigo-100', text: 'text-indigo-800', dot: 'bg-indigo-500' },
   assigned: { bg: 'bg-amber-100', text: 'text-amber-800', dot: 'bg-amber-500' },
   in_progress: { bg: 'bg-orange-100', text: 'text-orange-800', dot: 'bg-orange-500' },
   done: { bg: 'bg-emerald-100', text: 'text-emerald-800', dot: 'bg-emerald-500' },

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BuildingController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\FonnteWebhookController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\TicketController;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Route;
 | Public API Routes (No Authentication Required)
 |--------------------------------------------------------------------------
 */
+
+Route::post('/webhook/fonnte', [FonnteWebhookController::class, 'handle']);
 
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
@@ -50,9 +53,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Ticket Management
     Route::get('/admin/tickets', [TicketController::class, 'index']);
+    Route::get('/admin/tickets/archived', [TicketController::class, 'archived']);
     Route::get('/admin/tickets/{ticket}', [TicketController::class, 'show']);
     Route::patch('/admin/tickets/{ticket}/status', [TicketController::class, 'updateStatus']);
     Route::patch('/admin/tickets/{ticket}/assign', [TicketController::class, 'assign']);
+    Route::patch('/admin/tickets/{ticket}/archive', [TicketController::class, 'archive']);
+    Route::post('/admin/tickets/bulk-archive', [TicketController::class, 'bulkArchive']);
 
     // Analytics
     Route::get('/admin/analytics', [AnalyticsController::class, 'index']);

@@ -22,12 +22,14 @@ class Ticket extends Model
         'status',
         'technician_id',
         'resolved_at',
+        'archived_at',
     ];
 
     protected function casts(): array
     {
         return [
             'resolved_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 

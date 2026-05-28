@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
             $table->text('description');
             $table->string('photo_path')->nullable();
-            $table->enum('status', ['new', 'validated', 'assigned', 'in_progress', 'done'])->default('new');
+            $table->enum('status', ['new', 'assigned', 'in_progress', 'done'])->default('new');
             $table->foreignId('technician_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamp('resolved_at')->nullable();
             $table->timestamps();

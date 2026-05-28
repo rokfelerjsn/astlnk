@@ -15,7 +15,7 @@ class AnalyticsController extends Controller
     {
         // Summary counts
         $totalTickets = Ticket::count();
-        $openTickets = Ticket::whereIn('status', ['new', 'validated'])->count();
+        $openTickets = Ticket::whereIn('status', ['new'])->count();
         $inProgress = Ticket::whereIn('status', ['assigned', 'in_progress'])->count();
         $resolved = Ticket::where('status', 'done')->count();
 
@@ -41,6 +41,7 @@ class AnalyticsController extends Controller
                 $resolvedCount = Ticket::whereHas('room', fn($q) => $q->where('building_id', $building->id))
                     ->where('status', 'done')->count();
                 return [
+                    'id' => $building->id,
                     'building' => $building->name,
                     'code' => $building->code,
                     'total' => $ticketCount,
@@ -53,6 +54,7 @@ class AnalyticsController extends Controller
         $categoryDistribution = Category::withCount('tickets')
             ->get()
             ->map(fn($cat) => [
+                'id' => $cat->id,
                 'name' => $cat->name,
                 'value' => $cat->tickets_count,
             ]);

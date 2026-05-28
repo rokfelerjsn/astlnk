@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import { Ticket, CheckCircle2, AlertCircle, Clock, Activity, Loader2 } from 'lucide-react';
+import { 
+  Ticket, CheckCircle2, AlertCircle, Clock, Activity, Loader2,
+  ArrowRight, Sparkles, Building2, Tags, Play
+} from 'lucide-react';
 import api from '@/lib/api';
 import { AnalyticsData } from '@/lib/types';
 
@@ -39,49 +43,236 @@ export default function DashboardPage() {
 
   const { summary, building_trends, category_distribution, monthly_trend } = data;
 
+  // Smart Insights Client-Side Calculations
+  const topBuilding = building_trends.length > 0 
+    ? building_trends.reduce((prev, current) => (prev.total > current.total) ? prev : current, building_trends[0])
+    : null;
+
+  const topCategory = category_distribution.length > 0
+    ? category_distribution.reduce((prev, current) => (prev.value > current.value) ? prev : current, category_distribution[0])
+    : null;
+
+  const avgHours = summary.avg_repair_hours;
+  let repairPerformanceLabel = '';
+  let repairPerformanceColor = '';
+  let repairPerformanceDesc = '';
+  if (avgHours === 0) {
+    repairPerformanceLabel = 'Belum Ada Data';
+    repairPerformanceColor = 'text-slate-600 bg-slate-100 border-slate-200';
+    repairPerformanceDesc = 'Belum ada tiket diselesaikan untuk mengukur performa waktu perbaikan.';
+  } else if (avgHours < 12) {
+    repairPerformanceLabel = 'Sangat Cepat';
+    repairPerformanceColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    repairPerformanceDesc = `Rata-rata waktu perbaikan adalah ${avgHours} jam. Tim pemeliharaan sangat responsif!`;
+  } else if (avgHours <= 24) {
+    repairPerformanceLabel = 'Cepat';
+    repairPerformanceColor = 'text-indigo-700 bg-indigo-50 border-indigo-200';
+    repairPerformanceDesc = `Rata-rata waktu perbaikan adalah ${avgHours} jam. Performa penyelesaian sudah cukup efisien.`;
+  } else {
+    repairPerformanceLabel = 'Perlu Perhatian';
+    repairPerformanceColor = 'text-amber-700 bg-amber-50 border-amber-200';
+    repairPerformanceDesc = `Rata-rata waktu perbaikan ${avgHours} jam. Perlu evaluasi beban kerja teknisi agar penanganan lebih cepat.`;
+  }
+
+  const totalTickets = summary.total;
+  const resolvedTickets = summary.resolved;
+  const completionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500">Ringkasan statistik pelaporan fasilitas.</p>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-slate-900">Dashboard Analitik</h1>
+        <p className="text-sm text-slate-500">Ringkasan analitik dan tindakan operasional perbaikan fasilitas.</p>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
+      {/* 5-Column Stats Row (Interactive) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Total Tiket */}
+        <Link 
+          href="/dashboard/tickets" 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 hover:-translate-y-1 hover:shadow-md hover:border-indigo-200 transition-all duration-200 group relative overflow-hidden"
+        >
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
             <Ticket className="w-6 h-6 text-indigo-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Total Tiket</p>
-            <p className="text-2xl font-bold text-slate-900">{summary.total}</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Laporan</p>
+            <p className="text-2xl font-bold text-slate-900 mt-0.5">{summary.total}</p>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+          <ArrowRight className="w-4 h-4 text-indigo-400 absolute right-4 top-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+        </Link>
+
+        {/* Tiket Terbuka */}
+        <Link 
+          href="/dashboard/tickets?status=open" 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 hover:-translate-y-1 hover:shadow-md hover:border-amber-200 transition-all duration-200 group relative overflow-hidden"
+        >
+          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
             <AlertCircle className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Tiket Terbuka</p>
-            <p className="text-2xl font-bold text-slate-900">{summary.open}</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tiket Terbuka</p>
+            <p className="text-2xl font-bold text-slate-900 mt-0.5">{summary.open}</p>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+          <ArrowRight className="w-4 h-4 text-amber-400 absolute right-4 top-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+        </Link>
+
+        {/* Dalam Proses */}
+        <Link 
+          href="/dashboard/tickets?status=active" 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 hover:-translate-y-1 hover:shadow-md hover:border-blue-200 transition-all duration-200 group relative overflow-hidden"
+        >
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+            <Play className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dalam Proses</p>
+            <p className="text-2xl font-bold text-slate-900 mt-0.5">{summary.in_progress}</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-blue-400 absolute right-4 top-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+        </Link>
+
+        {/* Selesai */}
+        <Link 
+          href="/dashboard/tickets?status=done" 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 hover:-translate-y-1 hover:shadow-md hover:border-emerald-200 transition-all duration-200 group relative overflow-hidden"
+        >
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
             <CheckCircle2 className="w-6 h-6 text-emerald-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Selesai</p>
-            <p className="text-2xl font-bold text-slate-900">{summary.resolved}</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tiket Selesai</p>
+            <p className="text-2xl font-bold text-slate-900 mt-0.5">{summary.resolved}</p>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-blue-600" />
+          <ArrowRight className="w-4 h-4 text-emerald-400 absolute right-4 top-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+        </Link>
+
+        {/* Waktu Rata-rata */}
+        <Link 
+          href="/dashboard/tickets/history" 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 hover:-translate-y-1 hover:shadow-md hover:border-violet-200 transition-all duration-200 group relative overflow-hidden"
+        >
+          <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+            <Clock className="w-6 h-6 text-violet-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Waktu Rata-rata</p>
-            <p className="text-2xl font-bold text-slate-900">{summary.avg_repair_hours} <span className="text-sm font-normal text-slate-500">jam</span></p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Rata-rata Respon</p>
+            <p className="text-2xl font-bold text-slate-900 mt-0.5">
+              {summary.avg_repair_hours} <span className="text-xs font-normal text-slate-400 lowercase">jam</span>
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-violet-400 absolute right-4 top-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+        </Link>
+      </div>
+
+      {/* Smart Automated Insights Section */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse-soft" />
+          <h2 className="text-lg font-bold text-slate-900">Analisis & Insight Otomatis</h2>
+          <span className="ml-auto text-[10px] sm:text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full font-semibold">Rekomendasi Tindakan</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Top Building Insight */}
+          {topBuilding && (
+            <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/20 hover:bg-amber-50/40 transition-all duration-200 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-2">
+                  <Building2 className="w-4 h-4 text-amber-600" />
+                  Gedung Teraktif
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  <span className="font-bold text-slate-800">{topBuilding.building}</span> memiliki jumlah laporan terbanyak, yaitu <span className="font-bold text-slate-800">{topBuilding.total} tiket</span> ({topBuilding.pending} pending).
+                </p>
+              </div>
+              <Link 
+                href={`/dashboard/tickets?buildingId=${topBuilding.id}`} 
+                className="mt-3 text-xs text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 group/btn w-fit"
+              >
+                Tinjau Tiket Gedung
+                <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )}
+
+          {/* Top Category Insight */}
+          {topCategory && topCategory.value > 0 ? (
+            <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/20 hover:bg-indigo-50/40 transition-all duration-200 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-indigo-800 font-semibold text-sm mb-2">
+                  <Tags className="w-4 h-4 text-indigo-600" />
+                  Kerusakan Terpopuler
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Kerusakan <span className="font-bold text-slate-800">{topCategory.name}</span> paling sering dilaporkan dengan total <span className="font-bold text-slate-800">{topCategory.value} laporan</span>. Pastikan suku cadang kategori ini siap sedia.
+                </p>
+              </div>
+              <Link 
+                href={`/dashboard/tickets?categoryId=${topCategory.id}`} 
+                className="mt-3 text-xs text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-1 group/btn w-fit"
+              >
+                Tinjau Tiket Kategori
+                <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-slate-600 font-semibold text-sm mb-2">
+                  <Tags className="w-4 h-4 text-slate-400" />
+                  Kerusakan Terpopuler
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Belum ada laporan kategori kerusakan yang tercatat saat ini.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Repair Efficiency Insight */}
+          <div className="p-4 rounded-xl border border-violet-100 bg-violet-50/20 hover:bg-violet-50/40 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-violet-800 font-semibold text-sm mb-2">
+                <Clock className="w-4 h-4 text-violet-600" />
+                Efisiensi Perbaikan
+              </div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${repairPerformanceColor}`}>
+                  {repairPerformanceLabel}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {repairPerformanceDesc}
+              </p>
+            </div>
+            <Link 
+              href="/dashboard/tickets/history" 
+              className="mt-3 text-xs text-violet-700 hover:text-violet-900 font-bold flex items-center gap-1 group/btn w-fit"
+            >
+              Lihat Riwayat Perbaikan
+              <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          {/* Completion Rate Insight */}
+          <div className="p-4 rounded-xl border border-emerald-100 bg-emerald-50/20 hover:bg-emerald-50/40 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-emerald-800 font-semibold text-sm mb-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Rasio Penyelesaian
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Tingkat penyelesaian masalah berada di angka <span className="font-bold text-slate-800">{completionRate}%</span>. Dari total laporan, sebanyak <span className="font-bold text-slate-800">{resolvedTickets} tiket</span> berhasil diselesaikan.
+              </p>
+            </div>
+            <Link 
+              href="/dashboard/tickets?status=open" 
+              className="mt-3 text-xs text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1 group/btn w-fit"
+            >
+              Tindak Lanjuti Laporan
+              <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+            </Link>
           </div>
         </div>
       </div>
@@ -108,40 +299,77 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Category Chart */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
+        {/* Category Chart (Interactive Grid Layout) */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <h2 className="text-lg font-bold text-slate-900">Distribusi Kategori</h2>
+            <span className="text-xs text-slate-400">Klik kategori untuk memfilter tiket</span>
           </div>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={category_distribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                  label={({ name, percent }) => percent > 0.05 ? `${name} (${(percent * 100).toFixed(0)}%)` : ''}
-                  labelLine={false}
-                >
-                  {category_distribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              </PieChart>
-            </ResponsiveContainer>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center flex-1">
+            <div className="h-60 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={category_distribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="value"
+                    label={({ percent }) => (percent !== undefined && percent > 0.08) ? `${(percent * 100).toFixed(0)}%` : ''}
+                    labelLine={false}
+                  >
+                    {category_distribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {category_distribution.map((entry, index) => {
+                const color = COLORS[index % COLORS.length];
+                return (
+                  <Link
+                    key={entry.name}
+                    href={`/dashboard/tickets?categoryId=${entry.id}`}
+                    className="flex items-center justify-between p-2 rounded-xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/20 transition-all group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span 
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: color }} 
+                      />
+                      <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-700 transition-colors truncate max-w-[120px]">
+                        {entry.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                        {entry.value}
+                      </span>
+                      <ArrowRight className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
+                    </div>
+                  </Link>
+                );
+              })}
+              {category_distribution.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-8">Belum ada data kategori.</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Building Trends Table */}
+      {/* Building Trends Table (Interactive) */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-6 border-b border-slate-100">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">Laporan per Gedung</h2>
+          <span className="text-xs text-slate-400">Klik nama gedung untuk memfilter tiket di Kanban</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -160,13 +388,21 @@ export default function DashboardPage() {
                 const completionRate = b.total > 0 ? (b.resolved / b.total) * 100 : 0;
                 return (
                   <tr key={b.code} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{b.building}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      <Link 
+                        href={`/dashboard/tickets?buildingId=${b.id}`}
+                        className="hover:text-indigo-600 transition-colors flex items-center gap-1.5 group/table w-fit"
+                      >
+                        {b.building}
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover/table:text-indigo-600 group-hover/table:translate-x-0.5 transition-all opacity-0 group-hover/table:opacity-100 flex-shrink-0" />
+                      </Link>
+                    </td>
                     <td className="px-6 py-4 text-center text-slate-500">
                       <span className="px-2 py-1 bg-slate-100 rounded-md text-xs">{b.code}</span>
                     </td>
-                    <td className="px-6 py-4 text-center text-slate-700">{b.total}</td>
-                    <td className="px-6 py-4 text-center text-emerald-600 font-medium">{b.resolved}</td>
-                    <td className="px-6 py-4 text-center text-amber-600 font-medium">{b.pending}</td>
+                    <td className="px-6 py-4 text-center text-slate-700 font-medium">{b.total}</td>
+                    <td className="px-6 py-4 text-center text-emerald-600 font-semibold">{b.resolved}</td>
+                    <td className="px-6 py-4 text-center text-amber-600 font-semibold">{b.pending}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">

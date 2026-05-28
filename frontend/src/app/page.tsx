@@ -27,12 +27,6 @@ export default function HomePage() {
             >
               Lacak Tiket
             </Link>
-            <Link
-              href="/login"
-              className="px-5 py-2.5 text-sm font-semibold text-indigo-700 bg-white rounded-xl hover:bg-indigo-50 transition-all shadow-lg shadow-indigo-900/20"
-            >
-              Login Admin
-            </Link>
           </div>
         </nav>
 

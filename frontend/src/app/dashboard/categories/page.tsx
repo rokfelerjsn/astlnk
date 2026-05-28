@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Loader2, X, Tags } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import api from '@/lib/api';
 import { Category } from '@/lib/types';
+import ActionDropdown from '@/components/ActionDropdown';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -11,7 +13,7 @@ export default function CategoriesPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', icon: '' });
+  const [formData, setFormData] = useState({ name: '' });
   const [saving, setSaving] = useState(false);
 
   const fetchCategories = async () => {
@@ -31,13 +33,13 @@ export default function CategoriesPage() {
 
   const openCreateModal = () => {
     setEditingId(null);
-    setFormData({ name: '', icon: '' });
+    setFormData({ name: '' });
     setIsModalOpen(true);
   };
 
   const openEditModal = (c: Category) => {
     setEditingId(c.id);
-    setFormData({ name: c.name, icon: c.icon || '' });
+    setFormData({ name: c.name });
     setIsModalOpen(true);
   };
 
@@ -69,6 +71,40 @@ export default function CategoriesPage() {
     }
   };
 
+  const modal = isModalOpen ? createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md animate-slide-in-up">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">{editingId ? 'Edit Kategori' : 'Tambah Kategori'}</h2>
+          <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nama Kategori</label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              placeholder="Contoh: AC / Pendingin"
+            />
+          </div>
+          <div className="pt-2 flex justify-end gap-3">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-xl transition-colors">Batal</button>
+            <button type="submit" disabled={saving} className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Simpan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -92,7 +128,6 @@ export default function CategoriesPage() {
               <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4 font-medium">Nama Kategori</th>
-                  <th className="px-6 py-4 font-medium">Icon ID</th>
                   <th className="px-6 py-4 font-medium text-center">Total Tiket</th>
                   <th className="px-6 py-4 font-medium text-right">Aksi</th>
                 </tr>
@@ -108,23 +143,31 @@ export default function CategoriesPage() {
                         <span className="font-medium text-slate-900">{c.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">{c.icon || '-'}</td>
                     <td className="px-6 py-4 text-center text-slate-700">{c.tickets_count || 0}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEditModal(c)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(c.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div className="flex justify-end">
+                        <ActionDropdown
+                          actions={[
+                            {
+                              label: 'Edit Kategori',
+                              icon: <Edit2 className="w-4 h-4" />,
+                              onClick: () => openEditModal(c),
+                            },
+                            {
+                              label: 'Hapus Kategori',
+                              icon: <Trash2 className="w-4 h-4" />,
+                              onClick: () => handleDelete(c.id),
+                              variant: 'danger',
+                            },
+                          ]}
+                        />
                       </div>
                     </td>
                   </tr>
                 ))}
                 {categories.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={3} className="px-6 py-12 text-center text-slate-500">
                       Tidak ada data kategori.
                     </td>
                   </tr>
@@ -135,48 +178,7 @@ export default function CategoriesPage() {
         )}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900">{editingId ? 'Edit Kategori' : 'Tambah Kategori'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nama Kategori</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-                  placeholder="Contoh: AC / Pendingin"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Icon ID (Opsional)</label>
-                <input
-                  type="text"
-                  value={formData.icon}
-                  onChange={e => setFormData({...formData, icon: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-                  placeholder="Contoh: Snowflake"
-                />
-              </div>
-              <div className="pt-2 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-xl transition-colors">Batal</button>
-                <button type="submit" disabled={saving} className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2">
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {modal}
     </div>
   );
 }

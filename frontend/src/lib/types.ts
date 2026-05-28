@@ -39,7 +39,7 @@ export interface Technician {
   updated_at: string;
 }
 
-export type TicketStatus = 'new' | 'validated' | 'assigned' | 'in_progress' | 'done';
+export type TicketStatus = 'new' | 'assigned' | 'in_progress' | 'done';
 
 export interface TicketLog {
   id: number;
@@ -63,6 +63,7 @@ export interface Ticket {
   status: TicketStatus;
   technician_id: number | null;
   resolved_at: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
   room?: Room;
@@ -87,6 +88,7 @@ export interface AnalyticsData {
     avg_repair_hours: number;
   };
   building_trends: Array<{
+    id: number;
     building: string;
     code: string;
     total: number;
@@ -94,6 +96,7 @@ export interface AnalyticsData {
     pending: number;
   }>;
   category_distribution: Array<{
+    id: number;
     name: string;
     value: number;
   }>;

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendTicketAssignmentJob;
 use App\Models\Ticket;
 use App\Models\TicketLog;
 use Illuminate\Http\JsonResponse;
@@ -73,11 +74,12 @@ class TicketController extends Controller
     }
 
     /**
-     * Admin: List all tickets with filters
+     * Admin: List all tickets with filters (excludes archived)
      */
     public function index(Request $request): JsonResponse
     {
         $tickets = Ticket::with(['room.building', 'category', 'technician'])
+            ->whereNull('archived_at')
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
             ->when($request->room_id, fn($q, $id) => $q->where('room_id', $id))
             ->when($request->category_id, fn($q, $id) => $q->where('category_id', $id))
@@ -85,6 +87,23 @@ class TicketController extends Controller
             ->when($request->search, fn($q, $s) => $q->where('ticket_code', 'like', "%{$s}%")
                 ->orWhere('reporter_name', 'like', "%{$s}%"))
             ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($tickets);
+    }
+
+    /**
+     * Admin: List archived tickets (history)
+     */
+    public function archived(Request $request): JsonResponse
+    {
+        $tickets = Ticket::with(['room.building', 'category', 'technician'])
+            ->whereNotNull('archived_at')
+            ->when($request->search, fn($q, $s) => $q->where(function ($query) use ($s) {
+                $query->where('ticket_code', 'like', "%{$s}%")
+                    ->orWhere('reporter_name', 'like', "%{$s}%");
+            }))
+            ->orderByDesc('archived_at')
             ->get();
 
         return response()->json($tickets);
@@ -106,7 +125,7 @@ class TicketController extends Controller
     public function updateStatus(Request $request, Ticket $ticket): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|in:new,validated,assigned,in_progress,done',
+            'status' => 'required|in:new,assigned,in_progress,done',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -142,7 +161,7 @@ class TicketController extends Controller
         $fromStatus = $ticket->status;
         $ticket->technician_id = $validated['technician_id'];
 
-        if ($ticket->status === 'validated' || $ticket->status === 'new') {
+        if ($ticket->status === 'new') {
             $ticket->status = 'assigned';
         }
 
@@ -156,6 +175,66 @@ class TicketController extends Controller
             'changed_by' => $request->user()?->name ?? 'admin',
         ]);
 
+        // Dispatch job to send WhatsApp notification
+        SendTicketAssignmentJob::dispatch($ticket);
+
         return response()->json($ticket->load(['room.building', 'category', 'technician']));
+    }
+
+    /**
+     * Admin: Archive a single ticket (move to history)
+     */
+    public function archive(Request $request, Ticket $ticket): JsonResponse
+    {
+        if ($ticket->status !== 'done') {
+            return response()->json(['message' => 'Hanya tiket dengan status Selesai yang dapat diarsipkan.'], 422);
+        }
+
+        $ticket->archived_at = now();
+        $ticket->save();
+
+        TicketLog::create([
+            'ticket_id' => $ticket->id,
+            'from_status' => 'done',
+            'to_status' => 'done',
+            'notes' => 'Tiket dipindahkan ke riwayat.',
+            'changed_by' => $request->user()?->name ?? 'admin',
+        ]);
+
+        return response()->json(['message' => 'Tiket berhasil diarsipkan.']);
+    }
+
+    /**
+     * Admin: Bulk archive tickets (move to history)
+     */
+    public function bulkArchive(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ticket_ids' => 'required|array|min:1',
+            'ticket_ids.*' => 'integer|exists:tickets,id',
+        ]);
+
+        $tickets = Ticket::whereIn('id', $validated['ticket_ids'])
+            ->where('status', 'done')
+            ->whereNull('archived_at')
+            ->get();
+
+        foreach ($tickets as $ticket) {
+            $ticket->archived_at = now();
+            $ticket->save();
+
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'from_status' => 'done',
+                'to_status' => 'done',
+                'notes' => 'Tiket dipindahkan ke riwayat (bulk).',
+                'changed_by' => $request->user()?->name ?? 'admin',
+            ]);
+        }
+
+        return response()->json([
+            'message' => $tickets->count() . ' tiket berhasil diarsipkan.',
+            'archived_count' => $tickets->count(),
+        ]);
     }
 }
