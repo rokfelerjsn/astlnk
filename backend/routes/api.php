@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/webhook/fonnte', [FonnteWebhookController::class, 'handle']);
+Route::match(['get', 'post'], '/webhook/fonnte', [FonnteWebhookController::class, 'handle']);
 
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
