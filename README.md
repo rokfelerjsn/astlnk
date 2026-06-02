@@ -1,169 +1,226 @@
 # AsetLink - Sistem Pelaporan & Pelacakan Aset Sarpras
 
-AsetLink adalah platform manajemen pelaporan, pelacakan, dan perbaikan aset sarana prasarana (sarpras) yang terintegrasi dengan WhatsApp Notification & Webhook Gateway menggunakan layanan **Fonnte**. 
+AsetLink adalah platform manajemen pelaporan, pelacakan, dan perbaikan aset sarana prasarana yang terintegrasi dengan WhatsApp Custom Bridge. Sistem ini memakai backend Laravel, frontend Next.js, dan bridge WhatsApp Custom untuk koneksi multi-device, QR pairing, notifikasi teknisi, serta callback button.
 
-Projek ini terdiri dari dua bagian utama:
-1. **Backend**: Laravel 11 (RESTful API & Webhook handler)
-2. **Frontend**: Next.js (Dashboard Admin & Form Pelaporan Publik)
+## Struktur Project
 
----
+- `backend`: Laravel REST API, dashboard API, webhook WhatsApp, dan source of truth data tiket.
+- `frontend`: Next.js untuk dashboard admin dan form laporan publik.
+- `whatsapp-bridge`: Node.js bridge berbasis Baileys untuk koneksi WhatsApp multi-device.
 
-## 🛠️ Prasyarat (Prerequisites)
+## Prasyarat
 
-Pastikan perangkat Anda sudah terinstal tools berikut:
-* **PHP >= 8.2**
-* **Composer**
-* **Node.js >= 18** & **npm**
-* **MySQL** atau database engine sejenis
-* Akun **[Fonnte](https://fonnte.com)** (untuk token API WhatsApp dan Webhook)
-* **Ngrok** atau **Expose** (untuk melakukan tunneling local server agar webhook Fonnte dapat diakses oleh internet)
+- PHP 8.2 atau lebih baru
+- Composer
+- Node.js 18 atau lebih baru
+- npm
+- MySQL atau SQLite
+- Akun WhatsApp aktif untuk dihubungkan melalui Linked Devices
 
----
+## Setup Backend
 
-## 🚀 Setup Project
+Masuk ke folder backend:
 
-### 1. Setup Backend (Laravel)
+```bash
+cd backend
+```
 
-1. Masuk ke direktori backend:
-   ```bash
-   cd backend
-   ```
+Instal dependensi PHP:
 
-2. Instal dependensi PHP:
-   ```bash
-   composer install
-   ```
+```bash
+composer install
+```
 
-3. Duplikat file `.env.example` menjadi `.env`:
-   ```bash
-   cp .env.example .env
-   ```
+Buat file `.env` dari contoh:
 
-4. Buka file `.env` dan konfigurasikan database serta token Fonnte Anda:
-   ```env
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_DATABASE=asetlink
-   DB_USERNAME=root
-   DB_PASSWORD=your_mysql_password
-   
-   # Token dari dashboard Fonnte Anda
-   FONNTE_TOKEN=your_fonnte_device_token
-   ```
+```bash
+cp .env.example .env
+```
 
-5. Generate application key:
-   ```bash
-   php artisan key:generate
-   ```
+Atur database dan konfigurasi bridge di `.env`:
 
-6. Buat database baru bernama `asetlink` di MySQL Anda, lalu jalankan migrasi beserta seeders untuk mengisi data awal:
-   ```bash
-   php artisan migrate --seed
-   ```
-   *Seeder akan membuat akun admin default:*
-   * **Email**: `admin@asetlink.id`
-   * **Password**: `password`
-   * Serta beberapa data ruangan, kategori, teknisi, dan tiket demo.
+```env
+APP_URL=http://127.0.0.1:8000
 
-7. Jalankan server lokal Laravel:
-   ```bash
-   php artisan serve
-   ```
-   Secara default backend akan berjalan di `http://127.0.0.1:8000`.
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=asetlink
+DB_USERNAME=root
+DB_PASSWORD=your_mysql_password
 
----
+WHATSAPP_BRIDGE_URL=http://127.0.0.1:7474
+WHATSAPP_BRIDGE_API_KEY=your_internal_bridge_key
+WHATSAPP_DEFAULT_DEVICE_ID=1
+WHATSAPP_WEBHOOK_SECRET=your_internal_bridge_key
+```
 
-### 2. Setup Frontend (Next.js)
+Generate application key:
 
-1. Masuk ke direktori frontend:
-   ```bash
-   cd ../frontend
-   ```
+```bash
+php artisan key:generate
+```
 
-2. Instal dependensi Node.js:
-   ```bash
-   npm install
-   ```
+Jalankan migrasi dan seeder:
 
-3. Jalankan development server:
-   ```bash
-   npm run dev
-   ```
-   Secara default frontend akan berjalan di `http://localhost:3000`.
-   *(Jika Anda ingin mengubah URL endpoint API backend, Anda dapat menambahkan file `.env.local` di dalam direktori frontend dan mendefinisikan `NEXT_PUBLIC_API_URL=http://your-backend-url/api`)*
+```bash
+php artisan migrate --seed
+```
 
----
+Akun admin default:
 
-## 🔗 Setup Webhook & WhatsApp Gateway (Fonnte)
+- Email: `admin@asetlink.id`
+- Password: `password`
 
-Layanan webhook digunakan agar teknisi dapat memperbarui status tiket secara langsung dengan membalas pesan WhatsApp dari Fonnte.
+Jalankan backend:
 
-### Langkah 1: Expose Backend ke Internet (Tunneling)
-Karena Fonnte mengirimkan data webhook dari cloud, localhost Anda tidak dapat diakses langsung oleh Fonnte. Gunakan tunneling seperti **Ngrok**:
+```bash
+php artisan serve
+```
 
-1. Jalankan ngrok pada port backend Laravel (default: `8000`):
-   ```bash
-   ngrok http 8000
-   ```
-2. Salin URL Forwarding HTTPS yang dihasilkan oleh Ngrok, misalnya: `https://abcd-1234-xx.ngrok-free.app`.
+Backend berjalan di `http://127.0.0.1:8000`.
 
-### Langkah 2: Konfigurasi Webhook di Dashboard Fonnte
-1. Masuk ke dashboard [Fonnte](https://fonnte.com).
-2. Pilih menu **Device** / Perangkat Anda yang aktif.
-3. Temukan pengaturan **Webhook** lalu masukkan URL webhook projek dengan format berikut:
-   ```text
-   https://[URL_NGROK_ANDA]/api/webhook/fonnte
-   ```
-   *Contoh:* `https://abcd-1234-xx.ngrok-free.app/api/webhook/fonnte`
-4. Pilih opsi **Advanced** atau pastikan metode webhook adalah `POST` dan dapat menerima payload json/form-data.
-5. Klik **Save / Update**.
+## Setup Frontend
 
----
+Masuk ke folder frontend:
 
-## 📱 Cara Kerja & Pengujian Webhook WhatsApp
+```bash
+cd ../frontend
+```
 
-Teknisi dapat melakukan update tiket secara interaktif melalui chat WhatsApp. 
+Instal dependensi:
 
-### Format Perintah WhatsApp yang Didukung:
-Setiap perintah dikirimkan ke nomor WhatsApp Fonnte Anda dengan format berikut (case-insensitive):
+```bash
+npm install
+```
 
-1. **Memulai Pekerjaan (On Progress)**
-   ```text
-   ONPROGRESS {kode_tiket}
-   ```
-   *Contoh:* `ONPROGRESS TK-04383`
-   *Efek:* Mengubah status tiket menjadi **In Progress** (Sedang Dikerjakan).
+Jalankan frontend:
 
-2. **Menyelesaikan Pekerjaan (Done)**
-   ```text
-   DONE {kode_tiket}
-   ```
-   *Contoh:* `DONE TK-04383`
-   *Efek:* Mengubah status tiket menjadi **Done** (Selesai) dan mencatat waktu penyelesaian.
+```bash
+npm run dev
+```
 
-3. **Menolak Tugas (Reject)**
-   ```text
-   REJECT {kode_tiket}
-   ```
-   *Contoh:* `REJECT TK-04383`
-   *Efek:* Mengembalikan status tiket menjadi **New** (Baru/Belum Ditugaskan) dan menghapus penugasan teknisi tersebut agar admin dapat menugaskan teknisi lain.
+Frontend berjalan di `http://localhost:3000`.
 
----
+Jika perlu mengubah endpoint backend, buat `frontend/.env.local`:
 
-### 🧪 Langkah Simulasi/Pengujian Webhook:
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+```
 
-1. **Ubah Nomor Handphone Teknisi:**
-   Untuk mencoba secara nyata menggunakan WhatsApp Anda sendiri, silakan ubah salah satu nomor HP teknisi di database (tabel `technicians`) menjadi nomor WhatsApp Anda yang aktif.
-   *(Gunakan format nomor sesuai yang dikirimkan Fonnte ke server, biasanya diawali `08...` atau `628...`)*
-   
-2. **Buat & Tugaskan Tiket:**
-   * Buka Dashboard Admin di `http://localhost:3000/login` dan masuk menggunakan akun admin.
-   * Buat laporan baru atau gunakan laporan yang sudah ada.
-   * Tugaskan tiket tersebut ke nama Teknisi yang sudah Anda ubah nomor HP-nya tadi.
+## Setup WhatsApp Custom Bridge
 
-3. **Terima & Balas Pesan:**
-   * Fonnte akan otomatis mengirimkan notifikasi ke WhatsApp Anda bahwa Anda telah ditugaskan sebuah tiket beserta detail tugas dan kodenya (misal: `TK-04383`).
-   * Balas pesan tersebut dengan mengetik: `ONPROGRESS TK-04383`.
-   * Cek dashboard admin, maka status tiket tersebut akan langsung ter-update menjadi **In Progress** secara *real-time*.
-   * Lakukan hal yang sama dengan membalas `DONE TK-04383` untuk menyelesaikannya.
+Masuk ke folder bridge:
+
+```bash
+cd ../whatsapp-bridge
+```
+
+Instal dependensi:
+
+```bash
+npm install
+```
+
+Buat file `.env` dari contoh:
+
+```bash
+cp .env.example .env
+```
+
+Atur konfigurasi bridge:
+
+```env
+WHATSAPP_BRIDGE_HOST=127.0.0.1
+WHATSAPP_BRIDGE_PORT=7474
+WHATSAPP_BRIDGE_API_KEY=your_internal_bridge_key
+WHATSAPP_DEFAULT_DEVICE_ID=1
+LARAVEL_API_URL=http://127.0.0.1:8000/api
+LARAVEL_BRIDGE_KEY=your_internal_bridge_key
+```
+
+Jalankan bridge:
+
+```bash
+npm start
+```
+
+Bridge berjalan di `http://127.0.0.1:7474`.
+
+
+## Menghubungkan Device WhatsApp
+
+1. Jalankan backend, frontend, dan bridge.
+2. Buka `http://localhost:3000/dashboard/devices`.
+3. Klik `Tambah Device` jika belum ada device.
+4. Klik `Connect`.
+5. Scan QR dari WhatsApp melalui menu Linked Devices.
+6. Status device akan berubah menjadi `Connected`.
+
+## Alur Kerja Notifikasi Tiket
+
+1. Admin membuat atau memilih tiket di dashboard.
+2. Admin menugaskan tiket ke teknisi yang ada di menu `Dashboard > Teknisi`.
+3. Backend memvalidasi nomor teknisi dari tabel `technicians`.
+4. Backend mengirim payload tugas ke WhatsApp Custom Bridge.
+5. Bridge mengirim pesan WhatsApp ke teknisi berisi detail tiket, foto lampiran bila ada, dan tombol:
+   - `Mulai Kerjakan`
+   - `Tandai Selesai`
+6. Saat teknisi menekan tombol, bridge meneruskan callback ke endpoint Laravel:
+   - `POST /api/webhook/whatsapp-custom`
+7. Laravel memvalidasi teknisi, tiket, dan callback, lalu memperbarui status tiket.
+
+## Aturan Nomor Teknisi
+
+- Bridge dan backend hanya memproses pesan dari nomor teknisi yang terdaftar.
+- Nomor teknisi dikelola di `http://localhost:3000/dashboard/technicians`.
+- Outbound notification hanya dikirim ke teknisi yang aktif dan `whatsapp_enabled`.
+- Callback dari nomor yang bukan teknisi akan diabaikan.
+
+## Endpoint Utama
+
+Backend:
+
+- `POST /api/webhook/whatsapp-custom`
+- `GET /api/internal/whatsapp/technician-numbers`
+- `GET /api/admin/whatsapp/devices`
+- `POST /api/admin/whatsapp/devices`
+- `POST /api/admin/whatsapp/devices/{device}/connect`
+- `POST /api/admin/whatsapp/devices/{device}/disconnect`
+- `POST /api/admin/whatsapp/devices/{device}/restart`
+- `DELETE /api/admin/whatsapp/devices/{device}`
+
+Bridge:
+
+- `GET /api/devices`
+- `POST /api/devices`
+- `POST /api/devices/{device}/connect`
+- `POST /api/devices/{device}/disconnect`
+- `POST /api/devices/{device}/restart`
+- `POST /api/messages/task-notification`
+- `POST /api/messages/text`
+- `POST /api/messages/completion-prompt`
+- `GET /api/technician-numbers`
+
+## Menjalankan Test
+
+Backend:
+
+```bash
+cd backend
+php artisan test
+```
+
+Bridge:
+
+```bash
+cd whatsapp-bridge
+npm test
+```
+
+## Catatan Operasional
+
+- Jangan menjalankan dua bridge dengan session WhatsApp yang sama.
+- Jika device sering bermasalah, disconnect device dari dashboard, hapus device, lalu scan QR ulang.
+- Session bridge tersimpan di `whatsapp-bridge/storage/sessions`.
+- `whatsapp-bridge/storage` tidak boleh dibagikan ke environment lain jika memakai nomor WhatsApp yang sama.

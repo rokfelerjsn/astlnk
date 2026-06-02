@@ -4,10 +4,11 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BuildingController;
 use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\FonnteWebhookController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\TicketController;
+use App\Http\Controllers\Api\WhatsAppDeviceController;
+use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,8 +17,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::match(['get', 'post'], '/webhook/fonnte', [FonnteWebhookController::class, 'handle']);
+Route::post('/webhook/whatsapp-custom', [WhatsAppWebhookController::class, 'handle']);
+Route::get('/internal/whatsapp/technician-numbers', [WhatsAppDeviceController::class, 'technicianNumbers']);
 
+Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::post('/tickets', [TicketController::class, 'store']);
@@ -62,4 +65,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Analytics
     Route::get('/admin/analytics', [AnalyticsController::class, 'index']);
+
+    Route::get('/admin/whatsapp/health', [WhatsAppDeviceController::class, 'health']);
+    Route::get('/admin/whatsapp/devices', [WhatsAppDeviceController::class, 'index']);
+    Route::post('/admin/whatsapp/devices', [WhatsAppDeviceController::class, 'store']);
+    Route::patch('/admin/whatsapp/devices/{device}', [WhatsAppDeviceController::class, 'update']);
+    Route::post('/admin/whatsapp/devices/{device}/connect', [WhatsAppDeviceController::class, 'connect']);
+    Route::post('/admin/whatsapp/devices/{device}/disconnect', [WhatsAppDeviceController::class, 'disconnect']);
+    Route::post('/admin/whatsapp/devices/{device}/restart', [WhatsAppDeviceController::class, 'restart']);
+    Route::delete('/admin/whatsapp/devices/{device}', [WhatsAppDeviceController::class, 'destroy']);
 });

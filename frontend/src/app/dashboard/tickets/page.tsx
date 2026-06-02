@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { 
@@ -39,6 +39,9 @@ function KanbanBoard() {
   const [archiving, setArchiving] = useState(false);
   const [selectedDoneIds, setSelectedDoneIds] = useState<Set<number>>(new Set());
   const [bulkArchiving, setBulkArchiving] = useState(false);
+  const pollingBusyRef = useRef(false);
+  const ticketFetchInFlightRef = useRef(false);
+  const draggingRef = useRef(false);
 
   // Read URL query parameters
   useEffect(() => {
@@ -53,23 +56,65 @@ function KanbanBoard() {
     if (statusParam) setFilterStatus(statusParam);
   }, [searchParams]);
 
+  useEffect(() => {
+    pollingBusyRef.current = updating || archiving || bulkArchiving;
+  }, [updating, archiving, bulkArchiving]);
+
+  const applyTickets = useCallback((rows: Ticket[]) => {
+    setTickets(rows);
+    setSelectedTicket((current) => {
+      if (!current) return current;
+      return rows.find((ticket) => ticket.id === current.id) ?? current;
+    });
+    setSelectedDoneIds((current) => {
+      const activeDoneIds = new Set(rows.filter((ticket) => ticket.status === 'done').map((ticket) => ticket.id));
+      return new Set(Array.from(current).filter((id) => activeDoneIds.has(id)));
+    });
+  }, []);
+
+  const fetchTickets = useCallback(async () => {
+    if (ticketFetchInFlightRef.current) return;
+    ticketFetchInFlightRef.current = true;
+
+    try {
+      const ticketsRes = await api.get('/admin/tickets');
+      applyTickets(ticketsRes.data);
+    } catch (err) {
+      console.error('Failed to load tickets', err);
+    } finally {
+      ticketFetchInFlightRef.current = false;
+    }
+  }, [applyTickets]);
+
   const fetchData = useCallback(async () => {
     try {
-      const [ticketsRes, techsRes, catsRes, bldgsRes] = await Promise.all([
-        api.get('/admin/tickets'), api.get('/admin/technicians'),
+      const [techsRes, catsRes, bldgsRes] = await Promise.all([
+        api.get('/admin/technicians'),
         api.get('/admin/categories'), api.get('/admin/buildings')
       ]);
-      setTickets(ticketsRes.data);
+      await fetchTickets();
       setTechnicians(techsRes.data);
       setCategories(catsRes.data);
       setBuildings(bldgsRes.data);
     } catch (err) { console.error('Failed to load data', err); }
     finally { setLoading(false); }
-  }, []);
+  }, [fetchTickets]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (pollingBusyRef.current) return;
+      if (draggingRef.current) return;
+      fetchTickets();
+    }, 3000);
+
+    return () => window.clearInterval(timer);
+  }, [fetchTickets]);
+
   const handleDragEnd = async (result: DropResult) => {
+    draggingRef.current = false;
     const { destination, source, draggableId } = result;
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
@@ -94,7 +139,7 @@ function KanbanBoard() {
     setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
     try {
       await api.patch(`/admin/tickets/${ticketId}/status`, { status: newStatus });
-      fetchData();
+      await fetchTickets();
     } catch (err) {
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: prevStatus } : t));
       alert('Gagal mengupdate status tiket.');
@@ -108,7 +153,7 @@ function KanbanBoard() {
     try {
       await api.patch(`/admin/tickets/${selectedTicket.id}/assign`, { technician_id: assigningTechnician });
       setIsModalOpen(false);
-      fetchData();
+      await fetchTickets();
     } catch (err) { alert('Gagal menugaskan teknisi.'); }
     finally { setUpdating(false); }
   };
@@ -118,7 +163,7 @@ function KanbanBoard() {
     try {
       await api.patch(`/admin/tickets/${ticketId}/archive`);
       setIsModalOpen(false);
-      fetchData();
+      await fetchTickets();
       setSelectedDoneIds(prev => { const n = new Set(prev); n.delete(ticketId); return n; });
     } catch (err: any) { alert(err.response?.data?.message || 'Gagal mengarsipkan tiket.'); }
     finally { setArchiving(false); }
@@ -131,7 +176,7 @@ function KanbanBoard() {
     try {
       await api.post('/admin/tickets/bulk-archive', { ticket_ids: Array.from(selectedDoneIds) });
       setSelectedDoneIds(new Set());
-      fetchData();
+      await fetchTickets();
     } catch (err) { alert('Gagal mengarsipkan tiket.'); }
     finally { setBulkArchiving(false); }
   };
@@ -280,7 +325,7 @@ function KanbanBoard() {
 
       {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden pb-2 min-h-0">
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <DragDropContext onDragStart={() => { draggingRef.current = true; }} onDragEnd={handleDragEnd}>
           <div className="flex gap-5 h-full items-stretch min-w-max px-1">
             {STATUS_FLOW.map((status) => (
               <div key={status} className={`w-80 flex flex-col h-full rounded-2xl kanban-col-${status} shadow-sm`}>

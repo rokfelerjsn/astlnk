@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Technician;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class TechnicianController extends Controller
 {
@@ -26,7 +27,11 @@ class TechnicianController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'status' => 'sometimes|in:available,busy',
+            'whatsapp_enabled' => 'sometimes|boolean',
         ]);
+
+        $validated['normalized_phone'] = Technician::normalizePhone($validated['phone']);
+        $this->ensureUniquePhone($validated['normalized_phone']);
 
         $technician = Technician::create($validated);
 
@@ -44,7 +49,13 @@ class TechnicianController extends Controller
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20',
             'status' => 'sometimes|in:available,busy',
+            'whatsapp_enabled' => 'sometimes|boolean',
         ]);
+
+        if (array_key_exists('phone', $validated)) {
+            $validated['normalized_phone'] = Technician::normalizePhone($validated['phone']);
+            $this->ensureUniquePhone($validated['normalized_phone'], $technician->id);
+        }
 
         $technician->update($validated);
 
@@ -56,5 +67,25 @@ class TechnicianController extends Controller
         $technician->delete();
 
         return response()->json(['message' => 'Teknisi berhasil dihapus.']);
+    }
+
+    private function ensureUniquePhone(?string $normalizedPhone, ?int $ignoreId = null): void
+    {
+        if (! $normalizedPhone) {
+            throw ValidationException::withMessages([
+                'phone' => ['Nomor WhatsApp tidak valid.'],
+            ]);
+        }
+
+        $exists = Technician::query()
+            ->where('normalized_phone', $normalizedPhone)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'phone' => ['Nomor WhatsApp sudah digunakan teknisi lain.'],
+            ]);
+        }
     }
 }

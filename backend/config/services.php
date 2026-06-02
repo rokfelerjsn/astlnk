@@ -39,4 +39,11 @@ return [
         'token' => env('FONNTE_TOKEN'),
     ],
 
+    'whatsapp_bridge' => [
+        'url' => env('WHATSAPP_BRIDGE_URL', 'http://127.0.0.1:7474'),
+        'api_key' => env('WHATSAPP_BRIDGE_API_KEY'),
+        'default_device_id' => env('WHATSAPP_DEFAULT_DEVICE_ID'),
+        'webhook_secret' => env('WHATSAPP_WEBHOOK_SECRET'),
+    ],
+
 ];

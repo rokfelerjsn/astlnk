@@ -33,7 +33,10 @@ export interface Technician {
   id: number;
   name: string;
   phone: string;
+  normalized_phone?: string | null;
   status: 'available' | 'busy';
+  whatsapp_enabled?: boolean;
+  last_whatsapp_seen_at?: string | null;
   tickets_count?: number;
   created_at: string;
   updated_at: string;
@@ -109,4 +112,32 @@ export interface AnalyticsData {
     name: string;
     value: number;
   }>;
+}
+
+export type WhatsAppDeviceStatus = 'connected' | 'disconnected' | 'qr_pending' | 'banned' | 'error';
+
+export interface WhatsAppDevice {
+  id: number | string;
+  display_name: string;
+  phone_number: string | null;
+  provider: string;
+  status: WhatsAppDeviceStatus;
+  quality_rating: string | null;
+  last_seen_at: string | null;
+  connected_at: string | null;
+  messages_today?: number;
+  metadata?: Record<string, unknown> | null;
+  qr?: string | null;
+  expires_at?: string | null;
+}
+
+export interface WhatsAppConnectResult {
+  device_id: number | string;
+  id?: number | string;
+  status: WhatsAppDeviceStatus;
+  qr?: string | null;
+  expires_at?: string | null;
+  transport?: string;
+  phone?: string | null;
+  phone_number?: string | null;
 }

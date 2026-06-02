@@ -23,6 +23,9 @@ class Ticket extends Model
         'technician_id',
         'resolved_at',
         'archived_at',
+        'wa_message_id',
+        'wa_sent_at',
+        'wa_device_id',
     ];
 
     protected function casts(): array
@@ -30,6 +33,7 @@ class Ticket extends Model
         return [
             'resolved_at' => 'datetime',
             'archived_at' => 'datetime',
+            'wa_sent_at' => 'datetime',
         ];
     }
 
