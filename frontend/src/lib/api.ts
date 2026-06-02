@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { WhatsAppConnectResult, WhatsAppDevice } from './types';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
@@ -35,3 +36,32 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export async function getWhatsAppDevices(): Promise<WhatsAppDevice[]> {
+  const res = await api.get('/admin/whatsapp/devices');
+  return res.data;
+}
+
+export async function createWhatsAppDevice(input: { display_name: string; provider?: string }): Promise<WhatsAppDevice> {
+  const res = await api.post('/admin/whatsapp/devices', input);
+  return res.data;
+}
+
+export async function connectWhatsAppDevice(id: number | string): Promise<WhatsAppConnectResult> {
+  const res = await api.post(`/admin/whatsapp/devices/${id}/connect`);
+  return res.data;
+}
+
+export async function disconnectWhatsAppDevice(id: number | string): Promise<WhatsAppConnectResult> {
+  const res = await api.post(`/admin/whatsapp/devices/${id}/disconnect`);
+  return res.data;
+}
+
+export async function restartWhatsAppDevice(id: number | string): Promise<WhatsAppConnectResult> {
+  const res = await api.post(`/admin/whatsapp/devices/${id}/restart`);
+  return res.data;
+}
+
+export async function deleteWhatsAppDevice(id: number | string): Promise<void> {
+  await api.delete(`/admin/whatsapp/devices/${id}`);
+}

@@ -16,10 +16,12 @@ function ReportFormContent() {
   const roomId = searchParams.get('room_id');
 
   const [room, setRoom] = useState<Room | null>(null);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [selectedRoomId, setSelectedRoomId] = useState(roomId || '');
 
   const [formData, setFormData] = useState({
     reporter_name: '',
@@ -29,6 +31,7 @@ function ReportFormContent() {
   });
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const selectedRoom = room || rooms.find((item) => String(item.id) === selectedRoomId) || null;
 
   const fetchData = useCallback(async () => {
     try {
@@ -40,6 +43,10 @@ function ReportFormContent() {
       if (roomId) {
         const roomRes = await api.get(`/rooms/${roomId}`);
         setRoom(roomRes.data);
+        setSelectedRoomId(roomId);
+      } else {
+        const roomsRes = await api.get('/rooms');
+        setRooms(roomsRes.data);
       }
     } catch {
       setError('Gagal memuat data. Pastikan koneksi internet Anda stabil.');
@@ -72,10 +79,16 @@ function ReportFormContent() {
     setSubmitting(true);
 
     try {
+      if (!selectedRoomId) {
+        setError('Pilih ruangan terlebih dahulu.');
+        setSubmitting(false);
+        return;
+      }
+
       const fd = new FormData();
       fd.append('reporter_name', formData.reporter_name);
       fd.append('reporter_phone', formData.reporter_phone);
-      fd.append('room_id', roomId || '');
+      fd.append('room_id', selectedRoomId);
       fd.append('category_id', formData.category_id);
       fd.append('description', formData.description);
       if (photo) {
@@ -129,7 +142,7 @@ function ReportFormContent() {
       <main className="max-w-lg mx-auto px-4 -mt-14">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden">
           {/* Room Info */}
-          {room && (
+          {selectedRoom && (
             <div className="bg-indigo-50 px-5 py-4 border-b border-indigo-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
@@ -137,9 +150,9 @@ function ReportFormContent() {
                 </div>
                 <div>
                   <p className="text-xs text-indigo-500 font-medium">Ruangan</p>
-                  <p className="text-sm font-bold text-indigo-900">{room.room_number}</p>
-                  {room.building && (
-                    <p className="text-xs text-indigo-600">{room.building.name}</p>
+                  <p className="text-sm font-bold text-indigo-900">{selectedRoom.room_number}</p>
+                  {selectedRoom.building && (
+                    <p className="text-xs text-indigo-600">{selectedRoom.building.name}</p>
                   )}
                 </div>
               </div>
@@ -151,7 +164,7 @@ function ReportFormContent() {
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-amber-800">
-                  Scan QR Code di ruangan untuk pelaporan otomatis.
+                  Pilih ruangan secara manual atau gunakan QR Code ruangan untuk pengisian otomatis.
                 </p>
               </div>
             </div>
@@ -162,6 +175,29 @@ function ReportFormContent() {
               <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
                 <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            {!roomId && (
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+                  <MapPin className="w-4 h-4 text-slate-400" />
+                  Lokasi Ruangan
+                </label>
+                <select
+                  id="room-select"
+                  required
+                  value={selectedRoomId}
+                  onChange={(e) => setSelectedRoomId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all appearance-none bg-white"
+                >
+                  <option value="">Pilih ruangan...</option>
+                  {rooms.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.building ? `${item.building.name} / ${item.room_number}` : item.room_number}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -279,7 +315,7 @@ function ReportFormContent() {
             <button
               id="submit-report"
               type="submit"
-              disabled={submitting || !roomId}
+              disabled={submitting || !selectedRoomId}
               className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200"
             >
               {submitting ? (

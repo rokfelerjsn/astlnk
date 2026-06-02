@@ -18,10 +18,20 @@ class WhatsAppLog extends Model
         'status',
         'provider_response',
         'error_message',
+        'whatsapp_device_id',
+        'wa_message_id',
+        'message_type',
+        'callback_id',
+        'payload',
+        'sent_at',
+        'received_at',
     ];
 
     protected $casts = [
         'provider_response' => 'array',
+        'payload' => 'array',
+        'sent_at' => 'datetime',
+        'received_at' => 'datetime',
     ];
 
     public function ticket()
@@ -32,5 +42,10 @@ class WhatsAppLog extends Model
     public function technician()
     {
         return $this->belongsTo(Technician::class);
+    }
+
+    public function device()
+    {
+        return $this->belongsTo(WhatsAppDevice::class, 'whatsapp_device_id');
     }
 }

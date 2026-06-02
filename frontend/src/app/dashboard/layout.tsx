@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, KanbanSquare, Building2, DoorOpen, 
   Tags, Users, QrCode, LogOut, Wrench, Menu, X, Loader2,
-  PanelLeftClose, PanelLeftOpen, History
+  PanelLeftClose, PanelLeftOpen, History, Smartphone
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ const NAVIGATION = [
   { name: 'Gedung', href: '/dashboard/buildings', icon: Building2 },
   { name: 'Kategori', href: '/dashboard/categories', icon: Tags },
   { name: 'Teknisi', href: '/dashboard/technicians', icon: Users },
+  { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
   { name: 'QR Generator', href: '/dashboard/qr-generator', icon: QrCode },
 ];
 

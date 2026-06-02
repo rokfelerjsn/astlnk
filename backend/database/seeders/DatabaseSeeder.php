@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // Sample Tickets
-        $statuses = ['new', 'validated', 'assigned', 'in_progress', 'done'];
+        $statuses = ['new', 'assigned', 'in_progress', 'done'];
         $descriptions = [
             'AC tidak dingin, sudah dicoba matikan dan nyalakan kembali tapi tetap tidak berfungsi.',
             'Proyektor tidak bisa menampilkan gambar, lampu indikator berkedip merah.',
@@ -129,25 +129,14 @@ class DatabaseSeeder extends Seeder
                 'created_at' => $createdAt,
             ]);
 
-            if (in_array($status, ['validated', 'assigned', 'in_progress', 'done'])) {
-                TicketLog::create([
-                    'ticket_id' => $ticket->id,
-                    'from_status' => 'new',
-                    'to_status' => 'validated',
-                    'notes' => 'Laporan telah diverifikasi.',
-                    'changed_by' => 'Admin Sarpras',
-                    'created_at' => $createdAt->copy()->addHours(rand(1, 12)),
-                ]);
-            }
-
             if (in_array($status, ['assigned', 'in_progress', 'done'])) {
                 TicketLog::create([
                     'ticket_id' => $ticket->id,
-                    'from_status' => 'validated',
+                    'from_status' => 'new',
                     'to_status' => 'assigned',
                     'notes' => 'Teknisi ditugaskan.',
                     'changed_by' => 'Admin Sarpras',
-                    'created_at' => $createdAt->copy()->addHours(rand(12, 24)),
+                    'created_at' => $createdAt->copy()->addHours(rand(1, 12)),
                 ]);
             }
 
