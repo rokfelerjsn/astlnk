@@ -44,8 +44,8 @@ function SuccessContent() {
             Lacak Tiket
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
-          <Link href="/" className="w-full flex items-center justify-center px-6 py-4 text-slate-600 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
-            Kembali ke Beranda
+          <Link href="/report" className="w-full flex items-center justify-center px-6 py-4 text-slate-600 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
+            Buat Laporan Baru
           </Link>
         </div>
       </div>

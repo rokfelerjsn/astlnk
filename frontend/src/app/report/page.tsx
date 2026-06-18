@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Wrench, Camera, Send, ArrowLeft, MapPin, User, Phone,
-  Tag, FileText, CheckCircle2, Loader2, AlertCircle, X, Upload
+  Tag, FileText, CheckCircle2, Loader2, AlertCircle, X, Upload, Search
 } from 'lucide-react';
 import api from '@/lib/api';
 import { Category, Room } from '@/lib/types';
@@ -122,220 +122,280 @@ function ReportFormContent() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-5 pb-20">
-        <div className="max-w-lg mx-auto">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-indigo-200 hover:text-white transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Kembali
-          </Link>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-white" />
+      <header className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-5 pb-24 lg:pb-36">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <Wrench className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-white">Lapor Kerusakan</h1>
             </div>
-            <h1 className="text-xl font-bold text-white">Lapor Kerusakan</h1>
+            <p className="text-indigo-200 text-sm">Isi formulir untuk melaporkan kerusakan fasilitas kelas</p>
           </div>
-          <p className="text-indigo-200 text-sm">Isi formulir di bawah untuk melaporkan kerusakan fasilitas</p>
+          <div>
+            <Link href="/track" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all">
+              <Search className="w-4 h-4" />
+              Lacak Status Tiket
+            </Link>
+          </div>
         </div>
       </header>
 
-      {/* Form */}
-      <main className="max-w-lg mx-auto px-4 -mt-14">
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden">
-          {/* Room Info */}
-          {selectedRoom && (
-            <div className="bg-indigo-50 px-5 py-4 border-b border-indigo-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-indigo-600" />
+      {/* Main Layout */}
+      <main className="max-w-5xl mx-auto px-4 -mt-16 lg:-mt-24 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Column (Desktop Room Info & Guidelines) */}
+          <div className="hidden lg:block lg:col-span-5 space-y-6">
+            {/* Room Card */}
+            {selectedRoom ? (
+              <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 p-6 border border-slate-100">
+                <p className="text-xs text-indigo-500 font-bold uppercase tracking-wider mb-2">Lokasi Terpilih</p>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0">
+                    <MapPin className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-slate-900 leading-tight">{selectedRoom.room_number}</h3>
+                    {selectedRoom.building && (
+                      <p className="text-sm text-slate-500 mt-1">{selectedRoom.building.name}</p>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-3 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      QR Code Terpindai
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-indigo-500 font-medium">Ruangan</p>
-                  <p className="text-sm font-bold text-indigo-900">{selectedRoom.room_number}</p>
-                  {selectedRoom.building && (
-                    <p className="text-xs text-indigo-600">{selectedRoom.building.name}</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 p-6 border border-slate-100">
+                <p className="text-xs text-amber-500 font-bold uppercase tracking-wider mb-2">Perhatian</p>
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Anda belum mendeteksi lokasi ruangan melalui QR Code. Silakan pilih lokasi ruangan secara manual pada form laporan.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Instruction Card (Desktop only) */}
+            <div className="hidden lg:block bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+              <h3 className="text-sm font-bold tracking-wider text-indigo-400 uppercase mb-4">Alur Penanganan</h3>
+              <div className="space-y-4">
+                {[
+                  { title: 'Kirim Laporan', desc: 'Isi formulir laporan lengkap beserta bukti foto (opsional).' },
+                  { title: 'Notifikasi Teknisi', desc: 'Sistem otomatis meneruskan tiket ke WhatsApp teknisi terkait.' },
+                  { title: 'Proses Perbaikan', desc: 'Teknisi datang ke lokasi dan mulai memperbaiki kerusakan.' },
+                  { title: 'Validasi & Selesai', desc: 'Status tiket diubah menjadi selesai setelah perbaikan dikonfirmasi.' },
+                ].map((step, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold shrink-0 text-indigo-300">
+                      {idx + 1}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">{step.title}</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (Form Card) */}
+          <div className="lg:col-span-7">
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 overflow-hidden border border-slate-100">
+              {/* Room details header if present */}
+              {selectedRoom && (
+                <div className="bg-indigo-50/50 px-6 py-4 border-b border-indigo-100/30 lg:hidden">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-indigo-600" />
+                    <div>
+                      <p className="text-xs text-indigo-500 font-semibold">Ruangan: <span className="font-extrabold">{selectedRoom.room_number}</span></p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-6 space-y-6">
+                {error && (
+                  <div className="flex items-start gap-2.5 p-4 bg-red-50 rounded-xl border border-red-100">
+                    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-red-700 font-medium">{error}</p>
+                  </div>
+                )}
+
+                {/* Form fields: Room Select (if no roomId) */}
+                {!roomId && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700" htmlFor="room-select">
+                      Lokasi Ruangan <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="room-select"
+                        required
+                        value={selectedRoomId}
+                        onChange={(e) => setSelectedRoomId(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none bg-white"
+                      >
+                        <option value="">Pilih ruangan...</option>
+                        {rooms.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.building ? `${item.building.name} / ${item.room_number}` : item.room_number}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-500 w-0 h-0" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Reporter Name */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700" htmlFor="reporter-name">
+                    Nama Pelapor <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="reporter-name"
+                      type="text"
+                      required
+                      value={formData.reporter_name}
+                      onChange={(e) => setFormData({ ...formData, reporter_name: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                      placeholder="Masukkan nama lengkap"
+                    />
+                  </div>
+                </div>
+
+                {/* Reporter Phone */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700" htmlFor="reporter-phone">
+                    Nomor WhatsApp <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="reporter-phone"
+                      type="tel"
+                      required
+                      value={formData.reporter_phone}
+                      onChange={(e) => setFormData({ ...formData, reporter_phone: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                      placeholder="Contoh: 08123456789"
+                    />
+                  </div>
+                </div>
+
+                {/* Category select */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700" htmlFor="category-select">
+                    Kategori Kerusakan <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="category-select"
+                      required
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none bg-white"
+                    >
+                      <option value="">Pilih kategori...</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-500 w-0 h-0" />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700" htmlFor="description">
+                    Deskripsi Kerusakan <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="description"
+                    required
+                    rows={4}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 resize-none"
+                    placeholder="Jelaskan kerusakan secara detail..."
+                  />
+                </div>
+
+                {/* Photo Upload */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Foto Kerusakan <span className="text-slate-400 font-normal">(Opsional, maks 5MB)</span>
+                  </label>
+                  
+                  {photoPreview ? (
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                      <img src={photoPreview} alt="Preview" className="w-full h-48 object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => { setPhoto(null); setPhotoPreview(null); }}
+                        className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-lg flex items-center justify-center text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="photo-upload"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/20 transition-all"
+                    >
+                      <Upload className="w-7 h-7 text-slate-300 mb-1" />
+                      <span className="text-xs text-slate-500">Ketuk untuk mengambil / mengunggah foto</span>
+                      <input
+                        id="photo-upload"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {!roomId && (
-            <div className="bg-amber-50 px-5 py-4 border-b border-amber-100">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-600" />
-                <p className="text-sm text-amber-800">
-                  Pilih ruangan secara manual atau gunakan QR Code ruangan untuk pengisian otomatis.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="p-5 space-y-5">
-            {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
-                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            {!roomId && (
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <MapPin className="w-4 h-4 text-slate-400" />
-                  Lokasi Ruangan
-                </label>
-                <select
-                  id="room-select"
-                  required
-                  value={selectedRoomId}
-                  onChange={(e) => setSelectedRoomId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all appearance-none bg-white"
+              {/* Submit Section */}
+              <div className="px-6 pb-6">
+                <button
+                  id="submit-report"
+                  type="submit"
+                  disabled={submitting || !selectedRoomId}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
                 >
-                  <option value="">Pilih ruangan...</option>
-                  {rooms.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.building ? `${item.building.name} / ${item.room_number}` : item.room_number}
-                    </option>
-                  ))}
-                </select>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Mengirim Laporan...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Kirim Laporan
+                    </>
+                  )}
+                </button>
               </div>
-            )}
-
-            {/* Name */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <User className="w-4 h-4 text-slate-400" />
-                Nama Pelapor
-              </label>
-              <input
-                id="reporter-name"
-                type="text"
-                required
-                value={formData.reporter_name}
-                onChange={(e) => setFormData({ ...formData, reporter_name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400"
-                placeholder="Masukkan nama lengkap"
-              />
-            </div>
-
-            {/* WhatsApp */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <Phone className="w-4 h-4 text-slate-400" />
-                Nomor WhatsApp
-              </label>
-              <input
-                id="reporter-phone"
-                type="tel"
-                required
-                value={formData.reporter_phone}
-                onChange={(e) => setFormData({ ...formData, reporter_phone: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400"
-                placeholder="08xxxxxxxxxx"
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <Tag className="w-4 h-4 text-slate-400" />
-                Kategori Kerusakan
-              </label>
-              <select
-                id="category-select"
-                required
-                value={formData.category_id}
-                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all appearance-none bg-white"
-              >
-                <option value="">Pilih kategori...</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <FileText className="w-4 h-4 text-slate-400" />
-                Deskripsi Kerusakan
-              </label>
-              <textarea
-                id="description"
-                required
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400 resize-none"
-                placeholder="Jelaskan kerusakan yang terjadi secara detail..."
-              />
-            </div>
-
-            {/* Photo Upload */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                <Camera className="w-4 h-4 text-slate-400" />
-                Foto Kerusakan <span className="text-slate-400 font-normal">(Opsional, maks 5MB)</span>
-              </label>
-              
-              {photoPreview ? (
-                <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                  <img src={photoPreview} alt="Preview" className="w-full h-48 object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => { setPhoto(null); setPhotoPreview(null); }}
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-lg flex items-center justify-center text-white hover:bg-black/80 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <label
-                  htmlFor="photo-upload"
-                  className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all"
-                >
-                  <Upload className="w-8 h-8 text-slate-300 mb-2" />
-                  <span className="text-sm text-slate-400">Ketuk untuk ambil foto</span>
-                  <input
-                    id="photo-upload"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
+            </form>
           </div>
-
-          {/* Submit Button */}
-          <div className="px-5 pb-5">
-            <button
-              id="submit-report"
-              type="submit"
-              disabled={submitting || !selectedRoomId}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Mengirim Laporan...
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  Kirim Laporan
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-
-        <p className="text-center text-xs text-slate-400 mt-6 mb-8">
-          Laporan Anda akan ditangani oleh tim Sarpras ITATS
-        </p>
+          
+        </div>
       </main>
     </div>
   );

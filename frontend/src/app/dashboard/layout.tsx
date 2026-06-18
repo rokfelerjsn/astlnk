@@ -11,15 +11,50 @@ import {
 import { useAuthStore } from '@/lib/store';
 import { useState } from 'react';
 
-const NAVIGATION = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, exact: true },
-  { name: 'Tiket (Kanban)', href: '/dashboard/tickets', icon: KanbanSquare, exact: true },
-  { name: 'Riwayat Tiket', href: '/dashboard/tickets/history', icon: History },
-  { name: 'Gedung', href: '/dashboard/buildings', icon: Building2 },
-  { name: 'Kategori', href: '/dashboard/categories', icon: Tags },
-  { name: 'Teknisi', href: '/dashboard/technicians', icon: Users },
-  { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
-  { name: 'QR Generator', href: '/dashboard/qr-generator', icon: QrCode },
+interface NavChild {
+  name: string;
+  href: string;
+  icon: any;
+  exact?: boolean;
+}
+
+interface NavItem {
+  name: string;
+  href?: string;
+  icon?: any;
+  exact?: boolean;
+  children?: NavChild[];
+}
+
+const NAVIGATION: NavItem[] = [
+  { 
+    name: 'Dashboard', 
+    href: '/dashboard', 
+    icon: LayoutDashboard, 
+    exact: true 
+  },
+  { 
+    name: 'Manajemen Tiket', 
+    children: [
+      { name: 'Tiket (Kanban)', href: '/dashboard/tickets', icon: KanbanSquare, exact: true },
+      { name: 'Riwayat Tiket', href: '/dashboard/tickets/history', icon: History },
+    ]
+  },
+  { 
+    name: 'Master Data', 
+    children: [
+      { name: 'Gedung', href: '/dashboard/buildings', icon: Building2 },
+      { name: 'Kategori', href: '/dashboard/categories', icon: Tags },
+      { name: 'Teknisi', href: '/dashboard/technicians', icon: Users },
+    ]
+  },
+  { 
+    name: 'Alat & Integrasi', 
+    children: [
+      { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
+      { name: 'QR Generator', href: '/dashboard/qr-generator', icon: QrCode },
+    ]
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +63,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, isLoading, isAuthenticated, checkAuth, logout } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const isChildActive = (child: NavChild) => {
+    return child.exact
+      ? pathname === child.href
+      : pathname === child.href || pathname?.startsWith(`${child.href}/`);
+  };
+
+  const isCategoryActive = (item: NavItem) => {
+    if (item.href) {
+      return item.exact
+        ? pathname === item.href
+        : pathname === item.href || pathname?.startsWith(`${item.href}/`);
+    }
+    if (item.children) {
+      return item.children.some((child) => isChildActive(child));
+    }
+    return false;
+  };
 
   useEffect(() => {
     checkAuth();
@@ -79,33 +131,70 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4">
           {NAVIGATION.map((item) => {
-            const isActive = item.exact
-              ? pathname === item.href
-              : pathname === item.href || pathname?.startsWith(`${item.href}/`);
+            const isActive = isCategoryActive(item);
+
+            if (item.href) {
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsSidebarOpen(false)}
+                  title={isSidebarCollapsed ? item.name : undefined}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    isActive 
+                      ? 'bg-indigo-50 text-indigo-700 font-semibold' 
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  } ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                >
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  {!isSidebarCollapsed && item.name}
+                </Link>
+              );
+            }
+
+            // Category item with children (always open / static group)
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsSidebarOpen(false)}
-                title={isSidebarCollapsed ? item.name : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  isActive 
-                    ? 'bg-indigo-50 text-indigo-700' 
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                } ${isSidebarCollapsed ? 'justify-center' : ''}`}
-              >
-                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                {!isSidebarCollapsed && item.name}
-              </Link>
+              <div key={item.name} className="space-y-1 pt-1">
+                {isSidebarCollapsed ? (
+                  <div className="border-t border-slate-100 my-2" />
+                ) : (
+                  <div className="px-3 pt-3 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase select-none">
+                    {item.name}
+                  </div>
+                )}
+                
+                {/* Submenu items */}
+                <div className="space-y-1">
+                  {item.children?.map((child) => {
+                    const isSubActive = isChildActive(child);
+                    return (
+                      <Link
+                        key={child.name}
+                        href={child.href}
+                        onClick={() => setIsSidebarOpen(false)}
+                        title={isSidebarCollapsed ? child.name : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                          isSubActive 
+                            ? 'bg-indigo-50 text-indigo-700 font-semibold' 
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        } ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                      >
+                        <child.icon className={`w-5 h-5 flex-shrink-0 ${isSubActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                        {!isSidebarCollapsed && <span className="truncate">{child.name}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>
 
         <div className={`p-4 border-t border-slate-100 ${isSidebarCollapsed ? 'px-2' : ''}`}>
-          {!isSidebarCollapsed && (
-            <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-50 mb-3">
+          {!isSidebarCollapsed ? (
+            <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-50">
               <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs flex-shrink-0">
                 {user?.name?.charAt(0) || 'A'}
               </div>
@@ -113,23 +202,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-sm font-medium text-slate-900 truncate">{user?.name}</p>
                 <p className="text-xs text-slate-500 truncate">{user?.email}</p>
               </div>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0 focus:outline-none"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                onClick={handleLogout}
+                title={`Logout (${user?.name || 'Admin'})`}
+                className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 hover:bg-red-100 hover:text-red-700 font-bold text-xs transition-colors cursor-pointer group focus:outline-none"
+              >
+                <span className="group-hover:hidden">{user?.name?.charAt(0) || 'A'}</span>
+                <LogOut className="w-4 h-4 hidden group-hover:block text-red-600" />
+              </button>
             </div>
           )}
-          {isSidebarCollapsed && (
-            <div className="flex justify-center mb-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs" title={user?.name || 'Admin'}>
-                {user?.name?.charAt(0) || 'A'}
-              </div>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            title={isSidebarCollapsed ? 'Logout' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
-          >
-            <LogOut className="w-5 h-5 text-red-500 flex-shrink-0" />
-            {!isSidebarCollapsed && 'Logout'}
-          </button>
         </div>
       </aside>
 

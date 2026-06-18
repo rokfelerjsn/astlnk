@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Wrench, Lock, Mail, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Wrench, Mail, Lock, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 
 export default function LoginPage() {
@@ -11,6 +10,7 @@ export default function LoginPage() {
   const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,73 +29,139 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center px-4">
-      <div className="absolute inset-0 opacity-30" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-      }} />
-      
-      <div className="w-full max-w-md relative z-10">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-8">
-          <ArrowLeft className="w-4 h-4" /> Kembali ke Beranda
-        </Link>
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-white font-sans">
+      {/* Left Panel - Glowing Gradient Side */}
+      <div className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 text-white border-r border-slate-800">
+        {/* Glow Effects */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/15 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none" />
         
-        <div className="glass-dark rounded-3xl p-8 shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Wrench className="w-7 h-7 text-white" />
+        {/* Header (Top of left panel) */}
+        <div className="relative z-10 flex items-center gap-2">
+          <Wrench className="w-5 h-5 text-indigo-400" />
+          <span className="font-bold text-slate-200 tracking-wide text-sm">AsetLink</span>
+        </div>
+
+        {/* Center content */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center max-w-sm mx-auto">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-8 border border-indigo-400/20">
+            <Wrench className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">AsetLink</h2>
+          <p className="text-sm font-medium text-indigo-300 tracking-wide uppercase mb-6">Asset & Maintenance System</p>
+          <p className="text-sm text-slate-400 leading-relaxed font-normal">
+            Solusi terpadu untuk mengelola aset, memantau laporan kerusakan, dan koordinasi perbaikan fasilitas kampus secara mudah dan efisien.
+          </p>
+        </div>
+
+        {/* Footer (Bottom of left panel) */}
+        <div className="relative z-10 text-xs text-slate-500">
+          ITATS Sarpras Division
+        </div>
+      </div>
+
+      {/* Right Panel - Login Form */}
+      <div className="flex items-center justify-center p-8 sm:p-16 lg:p-24 bg-white">
+        <div className="w-full max-w-md space-y-8">
+          <div>
+            {/* Mobile Logo Header */}
+            <div className="flex items-center gap-2 mb-6 md:hidden">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-md">
+                <Wrench className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-extrabold text-slate-900 tracking-tight text-xl">AsetLink</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-white">AsetLink</h1>
-            <p className="text-slate-400 text-sm mt-1">Login ke Dashboard Admin</p>
+            
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Login</h1>
+            <p className="text-slate-500 text-sm mt-2">
+              Silakan masukkan email dan password Anda untuk melanjutkan
+            </p>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 mb-6 bg-red-500/10 border border-red-500/20 rounded-xl">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-              <p className="text-sm text-red-300">{error}</p>
+            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl animate-fade-in">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+              <p className="text-sm text-red-700 font-medium">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                <Mail className="w-4 h-4 text-slate-500" /> Email
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="email">
+                Email
               </label>
-              <input
-                id="login-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all placeholder:text-slate-500"
-                placeholder="admin@asetlink.id"
-              />
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-600 transition-all placeholder:text-slate-400"
+                  placeholder="Masukkan email Anda"
+                />
+              </div>
             </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                <Lock className="w-4 h-4 text-slate-500" /> Password
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="password">
+                Password
               </label>
-              <input
-                id="login-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all placeholder:text-slate-500"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-600 transition-all placeholder:text-slate-400"
+                  placeholder="Masukkan password Anda"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/25 focus:ring-offset-0"
+                />
+                <span className="text-sm text-slate-600">Ingat saya</span>
+              </label>
+              <a href="#" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                Lupa Password?
+              </a>
+            </div>
+
             <button
               id="login-submit"
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 transition-all shadow-lg shadow-indigo-500/25"
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50 transition-all shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98]"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Masuk'}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Login'}
             </button>
           </form>
 
-          <div className="mt-6 p-3 bg-slate-800/30 rounded-xl border border-slate-700/50">
-            <p className="text-xs text-slate-500 text-center">Demo: admin@asetlink.id / password</p>
+          {/* <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+            <p className="text-xs text-slate-500 text-center font-medium">Demo: admin@asetlink.id / password</p>
+          </div> */}
+
+          <div className="text-center text-xs text-slate-400 pt-4">
+            © {new Date().getFullYear()} AsetLink by ITATS. All rights reserved.
           </div>
         </div>
       </div>
