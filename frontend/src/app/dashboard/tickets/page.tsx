@@ -22,6 +22,7 @@ const ALLOWED_DRAG: Record<string, string[]> = {
 
 function KanbanBoard() {
   const searchParams = useSearchParams();
+  const backendAssetBaseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api').replace(/\/api\/?$/, '');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -435,7 +436,7 @@ function KanbanBoard() {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Foto Lampiran</h3>
                       <div className="rounded-xl overflow-hidden border border-slate-200 h-32">
-                        <img src={`http://localhost:8000/storage/${selectedTicket.photo_path}`} alt="Lampiran" className="w-full h-full object-cover"
+                        <img src={`${backendAssetBaseUrl}/storage/${selectedTicket.photo_path}`} alt="Lampiran" className="w-full h-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YxZjVmOSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Gb3RvIHRpZGFrIHRlcnNlZGlhPC90ZXh0Pjwvc3ZnPg=='; }} />
                       </div>
                     </div>

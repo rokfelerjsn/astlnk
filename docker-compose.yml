@@ -1,0 +1,147 @@
+name: asetlink
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - backend_storage:/var/www/html/storage:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - asetlink
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: /api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_API_URL: /api
+    depends_on:
+      - backend
+    networks:
+      - asetlink
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:7474
+    volumes:
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend-init:
+        condition: service_completed_successfully
+    networks:
+      - asetlink
+
+  backend-init:
+    build:
+      context: ./backend
+    restart: "no"
+    env_file:
+      - .env.production
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:7474
+    command: sh -c "php artisan migrate --force && (php artisan storage:link || true) && php artisan optimize"
+    volumes:
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - asetlink
+
+  backend-worker:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:7474
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    volumes:
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend-init:
+        condition: service_completed_successfully
+    networks:
+      - asetlink
+
+  whatsapp-bridge:
+    build:
+      context: ./whatsapp-bridge
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      WHATSAPP_BRIDGE_HOST: 0.0.0.0
+      WHATSAPP_BRIDGE_PORT: 7474
+      LARAVEL_API_URL: http://nginx/api
+    volumes:
+      - whatsapp_storage:/app/storage
+    depends_on:
+      - nginx
+    networks:
+      - asetlink
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - asetlink
+
+networks:
+  asetlink:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  backend_storage:
+  backend_cache:
+  whatsapp_storage:
