@@ -15,15 +15,15 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Admin User
-        User::create([
-            'name' => 'Admin Sarpras',
-            'email' => 'admin@asetlink.id',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@asetlink.id'],
+            [
+                'name' => 'Admin Sarpras',
+                'password' => bcrypt('password'),
+                'role' => 'admin',
+            ]
+        );
 
-        // Buildings
         $buildings = [
             ['name' => 'Gedung A - Teknik Informatika', 'code' => 'GD-A'],
             ['name' => 'Gedung B - Teknik Elektro', 'code' => 'GD-B'],
@@ -33,23 +33,28 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($buildings as $b) {
-            Building::create($b);
+            Building::updateOrCreate(['code' => $b['code']], $b);
         }
 
-        // Rooms
         $rooms = [];
         foreach (Building::all() as $building) {
             for ($floor = 1; $floor <= 3; $floor++) {
                 for ($room = 1; $room <= 4; $room++) {
-                    $rooms[] = Room::create([
-                        'building_id' => $building->id,
-                        'room_number' => $building->code . '-' . $floor . '0' . $room,
-                    ]);
+                    $roomNumber = $building->code . '-' . $floor . '0' . $room;
+                    $rooms[] = Room::updateOrCreate(
+                        [
+                            'building_id' => $building->id,
+                            'room_number' => $roomNumber,
+                        ],
+                        [
+                            'building_id' => $building->id,
+                            'room_number' => $roomNumber,
+                        ]
+                    );
                 }
             }
         }
 
-        // Categories
         $categories = [
             ['name' => 'AC / Pendingin', 'icon' => 'Snowflake'],
             ['name' => 'Proyektor', 'icon' => 'Monitor'],
@@ -63,10 +68,9 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($categories as $cat) {
-            Category::create($cat);
+            Category::updateOrCreate(['name' => $cat['name']], $cat);
         }
 
-        // Technicians
         $technicians = [
             ['name' => 'Budi Santoso', 'phone' => '081234567890', 'status' => 'available'],
             ['name' => 'Agus Prasetyo', 'phone' => '081234567891', 'status' => 'available'],
@@ -76,10 +80,13 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($technicians as $tech) {
-            Technician::create($tech);
+            Technician::updateOrCreate(['phone' => $tech['phone']], $tech);
         }
 
-        // Sample Tickets
+        if (Ticket::query()->exists()) {
+            return;
+        }
+
         $statuses = ['new', 'assigned', 'in_progress', 'done'];
         $descriptions = [
             'AC tidak dingin, sudah dicoba matikan dan nyalakan kembali tapi tetap tidak berfungsi.',
@@ -119,7 +126,6 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => $createdAt,
             ]);
 
-            // Create log entries
             TicketLog::create([
                 'ticket_id' => $ticket->id,
                 'from_status' => null,
