@@ -16,6 +16,14 @@ export default function QRGeneratorPage() {
   const [generating, setGenerating] = useState(false);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
 
+  const getReportUrl = (roomId: number) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/report?room_id=${roomId}`;
+    }
+
+    return `${process.env.NEXT_PUBLIC_FRONTEND_URL || ''}/report?room_id=${roomId}`;
+  };
+
   useEffect(() => {
     const fetchBuildings = async () => {
       try {
@@ -56,7 +64,7 @@ export default function QRGeneratorPage() {
     setGenerating(true);
     try {
       const res = await api.post(`/admin/rooms/${selectedRoom.id}/qr`);
-      setQrUrl(res.data.url);
+      setQrUrl(getReportUrl(selectedRoom.id));
       
       // Update room local state
       setRooms(rooms.map(r => r.id === selectedRoom.id ? { ...r, qr_path: res.data.qr_path } : r));
@@ -154,7 +162,7 @@ export default function QRGeneratorPage() {
                         onClick={() => {
                           setSelectedRoom(r);
                           if (r.qr_path) {
-                            setQrUrl(`${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/report?room_id=${r.id}`);
+                            setQrUrl(getReportUrl(r.id));
                           } else {
                             setQrUrl(null);
                           }

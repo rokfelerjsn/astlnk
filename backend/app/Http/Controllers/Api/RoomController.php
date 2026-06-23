@@ -61,7 +61,7 @@ class RoomController extends Controller
 
     public function generateQr(Room $room): JsonResponse
     {
-        $url = config('app.frontend_url', 'http://localhost:3000') . '/report?room_id=' . $room->id;
+        $url = rtrim(config('app.frontend_url', config('app.url')), '/') . '/report?room_id=' . $room->id;
         
         $qrContent = QrCode::format('svg')
             ->size(300)
