@@ -264,6 +264,15 @@ class WhatsAppService
 
     private function ticketPayload(Ticket $ticket, Technician $technician): array
     {
+        $photoUrl = null;
+
+        if ($ticket->photo_path) {
+            $assetUrl = config('services.whatsapp_bridge.asset_url');
+            $photoUrl = $assetUrl
+                ? rtrim($assetUrl, '/').'/storage/'.$ticket->photo_path
+                : asset('storage/'.$ticket->photo_path);
+        }
+
         return [
             'id' => $ticket->id,
             'ticket_code' => $ticket->ticket_code,
@@ -273,7 +282,7 @@ class WhatsAppService
             'reporter_name' => $ticket->reporter_name,
             'reporter_phone' => $ticket->reporter_phone,
             'description' => $ticket->description,
-            'photo_url' => $ticket->photo_path ? asset('storage/'.$ticket->photo_path) : null,
+            'photo_url' => $photoUrl,
             'photo_path' => $ticket->photo_path ? storage_path('app/public/'.$ticket->photo_path) : null,
             'created_at' => $this->formatDate($ticket->created_at),
             'technician_name' => $technician->name,

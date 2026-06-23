@@ -71,6 +71,7 @@ export function normalizeTicket(ticket) {
     resolvedAt: ticket.resolvedAt ?? ticket.resolved_at ?? "",
     technicianName: ticket.technicianName ?? ticket.technician_name ?? "",
     photoPath: ticket.photoPath ?? ticket.photo_path ?? null,
+    photoUrl: ticket.photoUrl ?? ticket.photo_url ?? null,
   };
 }
 
@@ -135,12 +136,12 @@ export async function sendTaskImage(sock, jid, ticket) {
   const data = normalizeTicket(ticket);
   const photoPath = resolvePhotoPath(data.photoPath);
 
-  if (!photoPath) {
+  if (!photoPath && !data.photoUrl) {
     return null;
   }
 
   return sock.sendMessage(jid, {
-    image: fs.readFileSync(photoPath),
+    image: photoPath ? fs.readFileSync(photoPath) : { url: data.photoUrl },
     caption: formatTaskMessage(ticket),
   });
 }
@@ -149,12 +150,12 @@ export async function prepareTaskImageHeader(sock, ticket) {
   const data = normalizeTicket(ticket);
   const photoPath = resolvePhotoPath(data.photoPath);
 
-  if (!photoPath || typeof sock.waUploadToServer !== "function") {
+  if ((!photoPath && !data.photoUrl) || typeof sock.waUploadToServer !== "function") {
     return null;
   }
 
   const media = await prepareWAMessageMedia(
-    { image: fs.readFileSync(photoPath) },
+    { image: photoPath ? fs.readFileSync(photoPath) : { url: data.photoUrl } },
     {
       upload: sock.waUploadToServer,
       logger: mediaLogger(sock),

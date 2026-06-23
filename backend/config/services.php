@@ -44,6 +44,7 @@ return [
         'api_key' => env('WHATSAPP_BRIDGE_API_KEY'),
         'default_device_id' => env('WHATSAPP_DEFAULT_DEVICE_ID'),
         'webhook_secret' => env('WHATSAPP_WEBHOOK_SECRET'),
+        'asset_url' => env('WHATSAPP_BRIDGE_ASSET_URL'),
     ],
 
 ];
