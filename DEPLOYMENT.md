@@ -1,10 +1,6 @@
 # Deploy AsetLink di Ubuntu dengan Docker
 
-Gunakan Nginx reverse proxy jika server punya IP publik dan port 80 atau 443 bisa dibuka.
-
-Gunakan Cloudflare Tunnel jika server tidak punya IP publik, berada di balik NAT, atau port publik tidak bisa dibuka.
-
-Konfigurasi bawaan repo ini memakai Nginx reverse proxy.
+Konfigurasi production memakai Caddy untuk HTTPS otomatis di depan Nginx internal.
 
 ## Persiapan server
 
@@ -14,19 +10,22 @@ sudo apt install -y docker.io docker-compose-plugin git
 sudo systemctl enable --now docker
 ```
 
-## Persiapan environment
+Pastikan port berikut terbuka di firewall/provider VPS:
+
+```text
+80/tcp
+443/tcp
+```
+
+## Environment
 
 ```bash
 cp .env.production.example .env.production
 ```
 
-Isi nilai berikut sebelum menjalankan deploy:
+Isi secret production:
 
 - `APP_KEY`
-- `APP_URL`
-- `FRONTEND_URL`
-- `SESSION_DOMAIN`
-- `SANCTUM_STATEFUL_DOMAINS`
 - `DB_PASSWORD`
 - `MYSQL_PASSWORD`
 - `MYSQL_ROOT_PASSWORD`
@@ -34,21 +33,23 @@ Isi nilai berikut sebelum menjalankan deploy:
 - `WHATSAPP_WEBHOOK_SECRET`
 - `LARAVEL_BRIDGE_KEY`
 
-Generate `APP_KEY`:
+Untuk domain DuckDNS:
 
-```bash
-docker compose --env-file .env.production run --rm backend php artisan key:generate --show
+```env
+APP_DOMAIN=asetlink.duckdns.org
+APP_URL=https://asetlink.duckdns.org
+FRONTEND_URL=https://asetlink.duckdns.org
+SESSION_DOMAIN=asetlink.duckdns.org
+SANCTUM_STATEFUL_DOMAINS=asetlink.duckdns.org
 ```
 
-## Menjalankan aplikasi
+## Deploy
 
 ```bash
 docker compose --env-file .env.production up -d --build
 ```
 
-## Membuat data awal
-
-Jalankan hanya jika database masih kosong dan Pak ingin memakai data contoh.
+## Data awal
 
 ```bash
 docker compose --env-file .env.production exec backend php artisan db:seed --force
@@ -58,28 +59,13 @@ docker compose --env-file .env.production exec backend php artisan db:seed --for
 
 ```bash
 docker compose --env-file .env.production ps
-docker compose --env-file .env.production logs -f nginx frontend backend backend-worker whatsapp-bridge
+docker compose --env-file .env.production logs -f caddy nginx frontend backend backend-worker whatsapp-bridge
 ```
 
-## Update dari GitHub
+## Update
 
 ```bash
 git pull
 docker compose --env-file .env.production up -d --build
 docker compose --env-file .env.production exec backend php artisan optimize
 ```
-
-## Domain DuckDNS
-
-Untuk domain Pak, gunakan:
-
-```env
-APP_URL=http://asetlink.duckdns.org
-FRONTEND_URL=http://asetlink.duckdns.org
-SESSION_DOMAIN=asetlink.duckdns.org
-SANCTUM_STATEFUL_DOMAINS=asetlink.duckdns.org
-```
-
-## HTTPS
-
-Konfigurasi ini baru HTTP. Untuk HTTPS, pasang Certbot di depan Nginx atau ganti reverse proxy menjadi Caddy.
