@@ -1,12 +1,11 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Copy, Search, ArrowRight, Loader2 } from 'lucide-react';
 
 function SuccessContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const ticketCode = searchParams.get('ticket') || 'TK-00000';
   const [copied, setCopied] = useState(false);
@@ -18,7 +17,7 @@ function SuccessContent() {
   };
 
   const handleNewReport = () => {
-    router.replace('/report');
+    window.location.assign('/report');
   };
 
   return (

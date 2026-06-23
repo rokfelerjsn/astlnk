@@ -45,6 +45,8 @@ function ReportFormContent() {
         setRoom(roomRes.data);
         setSelectedRoomId(roomId);
       } else {
+        setRoom(null);
+        setSelectedRoomId('');
         const roomsRes = await api.get('/rooms');
         setRooms(roomsRes.data);
       }
