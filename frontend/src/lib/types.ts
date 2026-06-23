@@ -112,6 +112,32 @@ export interface AnalyticsData {
     name: string;
     value: number;
   }>;
+  meta?: {
+    from: string | null;
+    to: string | null;
+    compare: boolean;
+    filters: Record<string, string | null>;
+  };
+  comparison?: {
+    from: string;
+    to: string;
+    summary: {
+      total: number;
+      resolved: number;
+      avg_repair_hours: number;
+    };
+    changes: {
+      total: AnalyticsChange;
+      resolved: AnalyticsChange;
+      avg_repair_hours: AnalyticsChange;
+    };
+  };
+}
+
+export interface AnalyticsChange {
+  difference: number;
+  percent: number;
+  better: boolean;
 }
 
 export type WhatsAppDeviceStatus = 'connected' | 'disconnected' | 'qr_pending' | 'banned' | 'error';
