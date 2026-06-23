@@ -1,11 +1,12 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Copy, Search, ArrowRight, Loader2 } from 'lucide-react';
 
 function SuccessContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const ticketCode = searchParams.get('ticket') || 'TK-00000';
   const [copied, setCopied] = useState(false);
@@ -14,6 +15,10 @@ function SuccessContent() {
     navigator.clipboard.writeText(ticketCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleNewReport = () => {
+    router.replace('/report');
   };
 
   return (
@@ -44,9 +49,9 @@ function SuccessContent() {
             Lacak Tiket
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
-          <Link href="/report" className="w-full flex items-center justify-center px-6 py-4 text-slate-600 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
+          <button type="button" onClick={handleNewReport} className="w-full flex items-center justify-center px-6 py-4 text-slate-600 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
             Buat Laporan Baru
-          </Link>
+          </button>
         </div>
       </div>
     </div>
