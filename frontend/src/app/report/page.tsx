@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Wrench, Camera, Send, ArrowLeft, MapPin, User, Phone,
-  Tag, FileText, CheckCircle2, Loader2, AlertCircle, X, Upload, Search
+  Tag, FileText, CheckCircle2, Loader2, AlertCircle, X, Upload, Search, Pencil
 } from 'lucide-react';
 import api from '@/lib/api';
 import { Category, Room } from '@/lib/types';
@@ -22,6 +22,7 @@ function ReportFormContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [selectedRoomId, setSelectedRoomId] = useState(roomId || '');
+  const [showRoomSelect, setShowRoomSelect] = useState(!roomId);
 
   const [formData, setFormData] = useState({
     reporter_name: '',
@@ -31,14 +32,17 @@ function ReportFormContent() {
   });
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const selectedRoom = room || rooms.find((item) => String(item.id) === selectedRoomId) || null;
+  const selectedRoom = rooms.find((item) => String(item.id) === selectedRoomId)
+    || (String(room?.id) === selectedRoomId ? room : null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [catRes] = await Promise.all([
+      const [catRes, roomsRes] = await Promise.all([
         api.get('/categories'),
+        api.get('/rooms'),
       ]);
       setCategories(catRes.data);
+      setRooms(roomsRes.data);
 
       if (roomId) {
         const roomRes = await api.get(`/rooms/${roomId}`);
@@ -47,8 +51,7 @@ function ReportFormContent() {
       } else {
         setRoom(null);
         setSelectedRoomId('');
-        const roomsRes = await api.get('/rooms');
-        setRooms(roomsRes.data);
+        setShowRoomSelect(true);
       }
     } catch {
       setError('Gagal memuat data. Pastikan koneksi internet Anda stabil.');
@@ -60,6 +63,15 @@ function ReportFormContent() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleRoomChange = (value: string) => {
+    setSelectedRoomId(value);
+    setRoom(rooms.find((item) => String(item.id) === value) || null);
+    setShowRoomSelect(!value);
+
+    const nextUrl = value ? `/report?room_id=${value}` : '/report';
+    window.history.replaceState(window.history.state, '', nextUrl);
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -153,7 +165,17 @@ function ReportFormContent() {
             {/* Room Card */}
             {selectedRoom ? (
               <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 p-6 border border-slate-100">
-                <p className="text-xs text-indigo-500 font-bold uppercase tracking-wider mb-2">Lokasi Terpilih</p>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <p className="text-xs text-indigo-500 font-bold uppercase tracking-wider">Lokasi Terpilih</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowRoomSelect(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Ubah Lokasi
+                  </button>
+                </div>
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0">
                     <MapPin className="w-6 h-6 text-indigo-600" />
@@ -213,11 +235,23 @@ function ReportFormContent() {
               {/* Room details header if present */}
               {selectedRoom && (
                 <div className="bg-indigo-50/50 px-6 py-4 border-b border-indigo-100/30 lg:hidden">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-indigo-600" />
-                    <div>
-                      <p className="text-xs text-indigo-500 font-semibold">Ruangan: <span className="font-extrabold">{selectedRoom.room_number}</span></p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <MapPin className="w-5 h-5 text-indigo-600 shrink-0" />
+                      <p className="text-sm text-indigo-600 font-semibold truncate">
+                        Ruangan: <span className="font-extrabold">{selectedRoom.room_number}</span>
+                      </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowRoomSelect(true)}
+                      className="inline-flex items-center gap-1.5 px-3 h-9 shrink-0 text-xs font-semibold text-indigo-700 bg-white hover:bg-indigo-100 rounded-lg border border-indigo-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                      title="Ubah lokasi ruangan"
+                      aria-label="Ubah lokasi ruangan"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Ubah
+                    </button>
                   </div>
                 </div>
               )}
@@ -230,18 +264,28 @@ function ReportFormContent() {
                   </div>
                 )}
 
-                {/* Form fields: Room Select (if no roomId) */}
-                {!roomId && (
+                {showRoomSelect && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700" htmlFor="room-select">
-                      Lokasi Ruangan <span className="text-red-500">*</span>
-                    </label>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="block text-sm font-semibold text-slate-700" htmlFor="room-select">
+                        Lokasi Ruangan <span className="text-red-500">*</span>
+                      </label>
+                      {selectedRoom && (
+                        <button
+                          type="button"
+                          onClick={() => setShowRoomSelect(false)}
+                          className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                        >
+                          Batal
+                        </button>
+                      )}
+                    </div>
                     <div className="relative">
                       <select
                         id="room-select"
                         required
                         value={selectedRoomId}
-                        onChange={(e) => setSelectedRoomId(e.target.value)}
+                        onChange={(e) => handleRoomChange(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none bg-white"
                       >
                         <option value="">Pilih ruangan...</option>
