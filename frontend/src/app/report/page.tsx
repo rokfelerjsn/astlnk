@@ -99,6 +99,12 @@ function ReportFormContent() {
         return;
       }
 
+      if (!/^08\d{10,11}$/.test(formData.reporter_phone)) {
+        setError('Nomor WhatsApp harus diawali 08 dan terdiri dari 12-13 digit.');
+        setSubmitting(false);
+        return;
+      }
+
       const fd = new FormData();
       fd.append('reporter_name', formData.reporter_name);
       fd.append('reporter_phone', formData.reporter_phone);
@@ -333,11 +339,16 @@ function ReportFormContent() {
                     <input
                       id="reporter-phone"
                       type="tel"
+                      inputMode="numeric"
+                      pattern="08[0-9]{10,11}"
+                      minLength={12}
+                      maxLength={13}
+                      title="Nomor WhatsApp harus diawali 08 dan terdiri dari 12-13 digit"
                       required
                       value={formData.reporter_phone}
-                      onChange={(e) => setFormData({ ...formData, reporter_phone: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, reporter_phone: e.target.value.replace(/\D/g, '').slice(0, 13) })}
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                      placeholder="Contoh: 08123456789"
+                      placeholder="Contoh: 081234567890"
                     />
                   </div>
                 </div>

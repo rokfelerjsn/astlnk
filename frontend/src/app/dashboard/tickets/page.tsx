@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { 
   Loader2, Search, Clock, MapPin, Tag, User, AlertCircle, Wrench, X, ChevronDown,
-  Archive, CheckSquare, Square
+  Archive, CheckSquare, Square, Maximize2
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import api from '@/lib/api';
@@ -35,6 +35,7 @@ function KanbanBoard() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [assigningTechnician, setAssigningTechnician] = useState<number | ''>('');
   const [updating, setUpdating] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -60,6 +61,17 @@ function KanbanBoard() {
   useEffect(() => {
     pollingBusyRef.current = updating || archiving || bulkArchiving;
   }, [updating, archiving, bulkArchiving]);
+
+  useEffect(() => {
+    if (!isPhotoOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsPhotoOpen(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPhotoOpen]);
 
   const applyTickets = useCallback((rows: Ticket[]) => {
     setTickets(rows);
@@ -404,7 +416,7 @@ function KanbanBoard() {
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-3">
                 Detail Tiket <span className="font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg text-sm">{selectedTicket.ticket_code}</span>
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setIsPhotoOpen(false); setIsModalOpen(false); }} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-5 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -435,9 +447,18 @@ function KanbanBoard() {
                   {selectedTicket.photo_path && (
                     <div>
                       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Foto Lampiran</h3>
-                      <div className="rounded-xl overflow-hidden border border-slate-200 h-32">
-                        <img src={`${backendAssetBaseUrl}/storage/${selectedTicket.photo_path}`} alt="Lampiran" className="w-full h-full object-cover"
+                      <div className="relative flex items-center justify-center rounded-xl overflow-hidden border border-slate-200 bg-slate-50 min-h-40 max-h-72">
+                        <img src={`${backendAssetBaseUrl}/storage/${selectedTicket.photo_path}`} alt="Foto lampiran tiket" className="w-full h-auto max-h-72 object-contain"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YxZjVmOSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5NGEzYjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Gb3RvIHRpZGFrIHRlcnNlZGlhPC90ZXh0Pjwvc3ZnPg=='; }} />
+                        <button
+                          type="button"
+                          onClick={() => setIsPhotoOpen(true)}
+                          className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg bg-slate-900/75 px-2.5 py-2 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white/70"
+                          aria-label="Buka foto ukuran penuh"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                          Perbesar
+                        </button>
                       </div>
                     </div>
                   )}
@@ -472,6 +493,30 @@ function KanbanBoard() {
               )}
             </div>
           </div>
+          {isPhotoOpen && selectedTicket.photo_path && (
+            <div
+              className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/90 p-3 sm:p-6"
+              onClick={() => setIsPhotoOpen(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Foto lampiran ukuran penuh"
+            >
+              <button
+                type="button"
+                onClick={() => setIsPhotoOpen(false)}
+                className="absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Tutup foto"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img
+                src={`${backendAssetBaseUrl}/storage/${selectedTicket.photo_path}`}
+                alt="Foto lampiran tiket ukuran penuh"
+                className="max-h-full max-w-full object-contain"
+                onClick={(event) => event.stopPropagation()}
+              />
+            </div>
+          )}
         </div>,
         document.body
       )}
