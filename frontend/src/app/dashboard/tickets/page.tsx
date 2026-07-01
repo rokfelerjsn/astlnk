@@ -5,20 +5,28 @@ import { useSearchParams } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { 
   Loader2, Search, Clock, MapPin, Tag, User, AlertCircle, Wrench, X, ChevronDown,
-  Archive, CheckSquare, Square, Maximize2
+  Archive, CheckSquare, Square, Maximize2, Trash2
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import api from '@/lib/api';
 import { Ticket, TicketStatus, Technician, Category, Building } from '@/lib/types';
 import { STATUS_LABELS, STATUS_FLOW, timeAgo } from '@/lib/utils';
 
-// Allowed drag transitions
 const ALLOWED_DRAG: Record<string, string[]> = {
   new: [],
   assigned: ['in_progress', 'new'],
   in_progress: ['done', 'assigned'],
   done: ['in_progress'],
 };
+
+function getErrorMessage(err: unknown, fallback: string) {
+  if (typeof err === 'object' && err !== null && 'response' in err) {
+    const response = (err as { response?: { data?: { message?: unknown } } }).response;
+    if (typeof response?.data?.message === 'string') return response.data.message;
+  }
+
+  return fallback;
+}
 
 function KanbanBoard() {
   const searchParams = useSearchParams();
@@ -39,6 +47,7 @@ function KanbanBoard() {
   const [assigningTechnician, setAssigningTechnician] = useState<number | ''>('');
   const [updating, setUpdating] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [deletingTicketId, setDeletingTicketId] = useState<number | null>(null);
   const [selectedDoneIds, setSelectedDoneIds] = useState<Set<number>>(new Set());
   const [bulkArchiving, setBulkArchiving] = useState(false);
   const pollingBusyRef = useRef(false);
@@ -59,8 +68,8 @@ function KanbanBoard() {
   }, [searchParams]);
 
   useEffect(() => {
-    pollingBusyRef.current = updating || archiving || bulkArchiving;
-  }, [updating, archiving, bulkArchiving]);
+    pollingBusyRef.current = updating || archiving || bulkArchiving || deletingTicketId !== null;
+  }, [updating, archiving, bulkArchiving, deletingTicketId]);
 
   useEffect(() => {
     if (!isPhotoOpen) return;
@@ -178,10 +187,28 @@ function KanbanBoard() {
       setIsModalOpen(false);
       await fetchTickets();
       setSelectedDoneIds(prev => { const n = new Set(prev); n.delete(ticketId); return n; });
-    } catch (err: any) { alert(err.response?.data?.message || 'Gagal mengarsipkan tiket.'); }
+    } catch (err) { alert(getErrorMessage(err, 'Gagal mengarsipkan tiket.')); }
     finally { setArchiving(false); }
   };
 
+  const handleDeleteTicket = async (ticket: Ticket, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (ticket.status !== 'new') return;
+    if (!confirm(`Hapus tiket ${ticket.ticket_code}? Data tiket akan hilang dari Kanban.`)) return;
+
+    setDeletingTicketId(ticket.id);
+    try {
+      await api.delete(`/admin/tickets/${ticket.id}`);
+      setTickets(prev => prev.filter(t => t.id !== ticket.id));
+      setSelectedTicket(current => current?.id === ticket.id ? null : current);
+      setIsModalOpen(current => current && selectedTicket?.id === ticket.id ? false : current);
+      await fetchTickets();
+    } catch (err) {
+      alert(getErrorMessage(err, 'Gagal menghapus tiket.'));
+    } finally {
+      setDeletingTicketId(null);
+    }
+  };
   const handleBulkArchive = async () => {
     if (selectedDoneIds.size === 0) return;
     if (!confirm(`Arsipkan ${selectedDoneIds.size} tiket ke riwayat?`)) return;
@@ -375,11 +402,25 @@ function KanbanBoard() {
                                   )}
                                   <span className="text-xs font-bold text-indigo-600 font-mono bg-indigo-50 px-2 py-1 rounded-md">{ticket.ticket_code}</span>
                                 </div>
-                                <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(ticket.created_at)}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(ticket.created_at)}</span>
+                                  {status === 'new' && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleDeleteTicket(ticket, e)}
+                                      disabled={deletingTicketId === ticket.id}
+                                      className="p-1.5 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                                      aria-label={`Hapus tiket ${ticket.ticket_code}`}
+                                      title="Hapus tiket"
+                                    >
+                                      {deletingTicketId === ticket.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               <p className="text-sm text-slate-800 font-medium mb-3 line-clamp-2">{ticket.description}</p>
                               <div className="space-y-1.5 mb-1">
-                                <div className="flex items-center gap-2 text-xs text-slate-500"><MapPin className="w-3 h-3 text-slate-400" /><span className="truncate">{ticket.room?.room_number} — {ticket.room?.building?.name}</span></div>
+                                <div className="flex items-center gap-2 text-xs text-slate-500"><MapPin className="w-3 h-3 text-slate-400" /><span className="truncate">{ticket.room?.room_number} - {ticket.room?.building?.name}</span></div>
                                 <div className="flex items-center gap-2 text-xs text-slate-500"><Tag className="w-3 h-3 text-slate-400" /><span className="truncate">{ticket.category?.name}</span></div>
                                 <div className="flex items-center gap-2 text-xs text-slate-500"><User className="w-3 h-3 text-slate-400" /><span className="truncate">{ticket.reporter_name}</span></div>
                               </div>

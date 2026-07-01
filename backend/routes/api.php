@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/admin/tickets/{ticket}/status', [TicketController::class, 'updateStatus']);
     Route::patch('/admin/tickets/{ticket}/assign', [TicketController::class, 'assign']);
     Route::patch('/admin/tickets/{ticket}/archive', [TicketController::class, 'archive']);
+    Route::delete('/admin/tickets/{ticket}', [TicketController::class, 'destroy']);
     Route::post('/admin/tickets/bulk-archive', [TicketController::class, 'bulkArchive']);
 
     // Analytics

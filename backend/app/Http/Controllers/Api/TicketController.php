@@ -204,6 +204,21 @@ class TicketController extends Controller
         return response()->json(['message' => 'Tiket berhasil diarsipkan.']);
     }
 
+    public function destroy(Ticket $ticket): JsonResponse
+    {
+        if ($ticket->status !== 'new') {
+            return response()->json(['message' => 'Hanya tiket Baru yang dapat dihapus.'], 422);
+        }
+
+        if ($ticket->photo_path) {
+            Storage::disk('public')->delete($ticket->photo_path);
+        }
+
+        $ticket->delete();
+
+        return response()->json(['message' => 'Tiket berhasil dihapus.']);
+    }
+
     /**
      * Admin: Bulk archive tickets (move to history)
      */
