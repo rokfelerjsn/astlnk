@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import { 
@@ -14,7 +14,12 @@ import {
 import api from '@/lib/api';
 import { AnalyticsData, Building, Category, Technician } from '@/lib/types';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e'];
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#84cc16', '#0ea5e9', '#d946ef', '#14b8a6', '#f97316', '#64748b', '#22c55e'];
+const CATEGORY_COLOR_OVERRIDES: Record<string, string> = {
+  'ac / pendingin': '#6366f1',
+  'komputer/pc': '#0ea5e9',
+};
+const categoryColor = (entry: { id: number; name: string }, index: number) => CATEGORY_COLOR_OVERRIDES[entry.name.toLowerCase()] || COLORS[index % COLORS.length];
 const DEFAULT_PERIOD = 'last_6_months';
 const PERIOD_OPTIONS = [
   ['today', 'Hari ini'],
@@ -428,15 +433,15 @@ export default function DashboardPage() {
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthly_trend} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <LineChart data={monthly_trend} margin={{ top: 10, right: 24, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <RechartsTooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} allowDecimals={false} />
+                <RechartsTooltip cursor={{ stroke: '#cbd5e1', strokeDasharray: '4 4' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                <Bar dataKey="total" name="Total Laporan" fill="#c7d2fe" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="resolved" name="Diselesaikan" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Line type="monotone" dataKey="total" name="Total Laporan" stroke="#94a3b8" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#ffffff' }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="resolved" name="Diselesaikan" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#ffffff' }} activeDot={{ r: 6 }} />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -463,7 +468,7 @@ export default function DashboardPage() {
                     labelLine={false}
                   >
                     {category_distribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={categoryColor(entry, index)} />
                     ))}
                   </Pie>
                   <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
@@ -473,7 +478,7 @@ export default function DashboardPage() {
             
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {category_distribution.map((entry, index) => {
-                const color = COLORS[index % COLORS.length];
+                const color = categoryColor(entry, index);
                 return (
                   <Link
                     key={entry.name}
