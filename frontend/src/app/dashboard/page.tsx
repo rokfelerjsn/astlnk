@@ -14,12 +14,18 @@ import {
 import api from '@/lib/api';
 import { AnalyticsData, Building, Category, Technician } from '@/lib/types';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#84cc16', '#0ea5e9', '#d946ef', '#14b8a6', '#f97316', '#64748b', '#22c55e'];
-const CATEGORY_COLOR_OVERRIDES: Record<string, string> = {
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#84cc16', '#0ea5e9', '#64748b', '#14b8a6', '#f97316', '#a855f7', '#0891b2'];
+const CATEGORY_COLORS: Record<string, string> = {
   'ac / pendingin': '#6366f1',
+  'proyektor': '#10b981',
+  'meja & kursi': '#f59e0b',
+  'listrik & stopkontak': '#ef4444',
+  'pintu & jendela': '#ec4899',
+  'lampu': '#84cc16',
   'komputer/pc': '#0ea5e9',
+  'lainnya': '#64748b',
 };
-const categoryColor = (entry: { id: number; name: string }, index: number) => CATEGORY_COLOR_OVERRIDES[entry.name.toLowerCase()] || COLORS[index % COLORS.length];
+const categoryColor = (entry: { id: number; name: string }, index: number) => CATEGORY_COLORS[entry.name.trim().toLowerCase()] || COLORS[index % COLORS.length];
 const DEFAULT_PERIOD = 'last_6_months';
 const PERIOD_OPTIONS = [
   ['today', 'Hari ini'],
