@@ -14,17 +14,18 @@ import {
 import api from '@/lib/api';
 import { AnalyticsData, Building, Category, Technician } from '@/lib/types';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#84cc16', '#0ea5e9', '#64748b', '#14b8a6', '#f97316', '#a855f7', '#0891b2'];
+const COLORS = ['#4f46e5', '#14b8a6', '#f97316', '#dc2626', '#d946ef', '#eab308', '#0284c7', '#64748b', '#7c3aed', '#0f766e', '#be123c', '#a16207', '#0369a1', '#c026d3'];
 const CATEGORY_COLORS: Record<string, string> = {
-  'ac / pendingin': '#6366f1',
-  'proyektor': '#10b981',
-  'meja & kursi': '#f59e0b',
-  'listrik & stopkontak': '#ef4444',
-  'pintu & jendela': '#ec4899',
-  'lampu': '#84cc16',
-  'komputer/pc': '#0ea5e9',
+  'ac / pendingin': '#4f46e5',
+  'proyektor': '#14b8a6',
+  'meja & kursi': '#f97316',
+  'listrik & stopkontak': '#dc2626',
+  'pintu & jendela': '#d946ef',
+  'lampu': '#eab308',
+  'komputer/pc': '#0284c7',
   'lainnya': '#64748b',
 };
+const RESERVED_CATEGORY_COLORS = new Set(Object.values(CATEGORY_COLORS));
 const categoryColor = (entry: { id: number; name: string }, index: number) => CATEGORY_COLORS[entry.name.trim().toLowerCase()] || COLORS[index % COLORS.length];
 const DEFAULT_PERIOD = 'last_6_months';
 const PERIOD_OPTIONS = [
@@ -190,6 +191,20 @@ export default function DashboardPage() {
   const totalTickets = summary.total;
   const resolvedTickets = summary.resolved;
   const completionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
+  const usedCategoryColors = new Set<string>();
+  const categoryColors = category_distribution.reduce<Record<number, string>>((acc, entry, index) => {
+    const preferred = CATEGORY_COLORS[entry.name.trim().toLowerCase()];
+    if (preferred && !usedCategoryColors.has(preferred)) {
+      acc[entry.id] = preferred;
+      usedCategoryColors.add(preferred);
+      return acc;
+    }
+
+    const fallback = COLORS.find((color) => !usedCategoryColors.has(color) && !RESERVED_CATEGORY_COLORS.has(color)) || COLORS.find((color) => !usedCategoryColors.has(color)) || COLORS[index % COLORS.length];
+    acc[entry.id] = fallback;
+    usedCategoryColors.add(fallback);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -474,7 +489,7 @@ export default function DashboardPage() {
                     labelLine={false}
                   >
                     {category_distribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={categoryColor(entry, index)} />
+                      <Cell key={`cell-${index}`} fill={categoryColors[entry.id] || categoryColor(entry, index)} />
                     ))}
                   </Pie>
                   <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
@@ -484,7 +499,7 @@ export default function DashboardPage() {
             
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {category_distribution.map((entry, index) => {
-                const color = categoryColor(entry, index);
+                const color = categoryColors[entry.id] || categoryColor(entry, index);
                 return (
                   <Link
                     key={entry.name}
